@@ -11,8 +11,14 @@ class TOWNAGE_API ATownAgePlayer : public ACharacter
     GENERATED_BODY()
 public:
     ATownAgePlayer();
+    virtual void BeginPlay() override;
     virtual void Tick(float DeltaSeconds) override;
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+    // Used by the editor import pipeline to serialize valid Blend Space interpolation data.
+    UFUNCTION(BlueprintCallable, Category="TownAge|Animation")
+    static bool RebuildWalkBlendSpace(class UBlendSpace1D* BlendSpace);
+    UFUNCTION(BlueprintPure, Category="TownAge|Animation")
+    static FVector2D GetWalkBlendWeights(class UBlendSpace1D* BlendSpace, float Speed);
     bool UsesTouchControls() const;
     bool IsSprintControlHeld() const;
     FVector2D TouchMove = FVector2D::ZeroVector;
@@ -34,6 +40,9 @@ private:
     bool bSprintRequested = false;
     bool bLastSentSprintRequest = false;
     FTownAgeStamina StaminaState;
+    float AnimationSpeed = 0.f;
+    UPROPERTY()
+    TObjectPtr<class UBlendSpace1D> WalkBlendSpace;
 protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Camera")
     TObjectPtr<class USpringArmComponent> CameraBoom;

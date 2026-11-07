@@ -11,7 +11,7 @@ Read the project's AGENTS.md and inspect the active character, movement code and
 
 Establish requested clips and the intended personality: relaxed short steps, restrained body bounce and soft arm swing are TownAge defaults. Start with Idle, Walk and Sprint unless the user requests another scope. Start/stop and turn clips follow a stable core set; do not silently expand to an eight-direction library.
 
-Inspect actual source and Unreal bone names, reference pose, units, mesh orientation and current gameplay speeds. Current defaults are walking 260cm/s and sprinting 440cm/s; read code rather than assuming these values remain fixed. Reuse the approved character reference, without regenerating its concept art.
+Inspect actual source and Unreal bone names, reference pose, units, mesh orientation and current gameplay speeds. Approved WalkDraft01 uses walking 68.5714cm/s; sprinting currently remains 440cm/s pending its own clip. Read code rather than assuming these values remain fixed. Reuse the approved character reference, without regenerating its concept art.
 
 Check the shoulders, hips/crotch, knees, ankles/boots and satchel through representative movement ranges. A prior 25-degree joint test alone does not establish walking readiness. Correct limited skin weights as needed; material character redesign returns to the townage-character reference approval stage. Do not add deform bones or change the production skeleton hierarchy as an incidental animation edit.
 
