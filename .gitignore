@@ -27,3 +27,6 @@ Saved/
 Thumbs.db
 Desktop.ini
 
+# Local Codex/OMX runtime state
+.omx/
+
