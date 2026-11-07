@@ -50,6 +50,12 @@ TownAge is a cozy Unreal Engine game about charming characters cultivating and i
 - Meshy may be used for prototypes or inspiration, but not as the default source for production character topology.
 - When animation is out of scope, export no animation clips while retaining an A-pose, skinned mesh, named bone hierarchy, and physics-ready structure.
 
+## Locomotion animation pipeline
+
+- Use the installed `$townage-locomotion` skill for movement-animation creation, polishing and integration. Repository source: `Tools/Skills/townage-locomotion/SKILL.md`.
+- Default sequence: motion brief and rig check -> Blender Idle/Walk/Sprint drafts -> show looping previews and wait for explicit user direction/approval -> polish and bake in-place clips -> Unreal Blend Space/Anim Blueprint -> PC/mobile/multiplayer verification.
+- Reuse approved character art and stable skeleton names. Do not begin final polish or production integration before the motion draft is approved. Existing approval of the same draft remains valid.
+
 ## Feature commits and publishing
 
 - Once a feature is complete and verified, commit and push its code/configuration/documentation as a focused feature commit using the Lore message format.
