@@ -15,6 +15,7 @@ Saved/
 *.sdf
 *.VC.db
 *.VC.opendb
+*.blend1
 
 # User-specific Unreal files
 *.xcodeproj

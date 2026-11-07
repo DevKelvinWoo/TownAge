@@ -26,4 +26,14 @@ TownAge is a cozy Unreal Engine game about charming characters cultivating and i
 - Keep Steam distribution, online services, controller and keyboard/mouse input, performance, achievements, localization, and packaging constraints in mind.
 - Prefer systems that support calm co-operative play and player expression over competitive power progression.
 
+## Character production pipeline
+
+- Use ImageGen for original character turnarounds and expression or outfit references.
+- Build and refine production character meshes in Blender through Blender MCP.
+- Preserve reproducible Blender build scripts and source `.blend` files alongside exported FBX files.
+- Use a shared, Unreal-friendly skeleton and modular materials or parts wherever possible.
+- Import and validate Skeletal Mesh, Skeleton, Physics Asset, materials, and later animation assets through Unreal MCP.
+- Meshy may be used for prototypes or inspiration, but not as the default source for production character topology.
+- When animation is out of scope, export no animation clips while retaining an A-pose, skinned mesh, named bone hierarchy, and physics-ready structure.
+
 When requirements are ambiguous, choose the interpretation that best reinforces the cozy village-life vision and preserves multiplayer and Steam compatibility.
