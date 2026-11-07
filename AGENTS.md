@@ -33,8 +33,8 @@ TownAge is a cozy Unreal Engine game about charming characters cultivating and i
 
 - Open `/Game/Maps/L_CharacterTest` for ordinary project work and character tests.
 - The test level uses `ATownAgeGameMode`, which spawns the controllable `ATownAgePlayer` at PlayerStart during Play.
-- `ATownAgePlayer` provides screen-relative WASD movement and a fixed cozy third-person camera. Approved WalkDraft01 locomotion uses an in-place walk and neutral standing support pose, driven by actual planar velocity through `BS_TownKeeper_Walk` and the engine's native single-node AnimInstance.
-- Walking speed is 68.5714cm/s to preserve the approved short-stride gait; sprint remains 440cm/s with a temporary capped fast-walk playback until a separate sprint animation is produced.
+- `ATownAgePlayer` uses the Meshy character under `/Game/Characters/Meshy/TownKeeper_Meshy/candidate_v001`, screen-relative WASD movement and the fixed cozy camera. Its native single-node AnimInstance evaluates Standing/Walk/Run through `Animations/Locomotion01/BS_TownKeeper_Meshy_Locomotion` from actual planar velocity.
+- Walking speed is87cm/s and sprint speed304cm/s, matched to the supplied Meshy cycles. The previous accelerated-walk sprint fallback is retired. Meshy hair/pouch automatic-skin deformation remains a known limitation; the user requested applying the available clips without further deep repair.
 - Hold Shift with movement to sprint. Stamina is server-authoritative: capacity 100, drain 20/s, regeneration 15/s after 1.5 seconds without sprinting, exhaustion unlock at 20. `ATownAgeHUD` shows a plain single-color stamina ring beside the character only while Shift is held.
 - This is the editor startup map and the current game default map.
 

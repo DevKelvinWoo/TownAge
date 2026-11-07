@@ -19,6 +19,8 @@ public:
     static bool RebuildWalkBlendSpace(class UBlendSpace1D* BlendSpace);
     UFUNCTION(BlueprintPure, Category="TownAge|Animation")
     static FVector2D GetWalkBlendWeights(class UBlendSpace1D* BlendSpace, float Speed);
+    UFUNCTION(BlueprintPure, Category="TownAge|Animation")
+    static FVector GetLocomotionSampleWeights(class UBlendSpace1D* BlendSpace, float Speed);
     bool UsesTouchControls() const;
     bool IsSprintControlHeld() const;
     FVector2D TouchMove = FVector2D::ZeroVector;

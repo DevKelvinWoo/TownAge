@@ -1,6 +1,6 @@
-# TownKeeper final character source
+# Legacy TownKeeper character source
 
-The active source is `Revision05/`. Unreal uses `/Game/Characters/Main/TownKeeper/FinalCharacter05/SK_TownKeeper_Reference05`; the placement Actor remains `/Game/Characters/Main/TownKeeper/BP_TownKeeper`.
+The active main character is now the Meshy delivery in `ArtSource/Meshy/TownKeeper_Meshy/candidate_v001`, with Standing/Walk/Run under its Unreal `Animations/Locomotion01` folder. This page describes the retained legacy Revision05 source for recovery; do not restore it as the native player by following old paths below. The stable placement Actor remains `/Game/Characters/Main/TownKeeper/BP_TownKeeper` and now shows the Meshy character.
 
 The current source includes packed atlas textures and centimeter-scale FBX. Revision05 adds forearm-relative relaxed hands, shorter body proportions and a convex face profile, while retaining the approved outfit and identity. Earlier source revisions remain local for recovery. The original cleanup archive is `Saved/AssetArchive/CharacterCleanup-20261107/`.
 

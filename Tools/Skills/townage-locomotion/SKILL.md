@@ -1,6 +1,6 @@
 ---
 name: townage-locomotion
-description: Create, polish, export and integrate TownAge locomotion animations using Blender MCP and Unreal MCP, with user review of motion drafts. Use for idle, walk, sprint and movement-transition animation requests; use townage-character for character modeling or redesign.
+description: Create, polish, export and integrate TownAge locomotion animations using Meshy motion assets, Blender inspection and Unreal MCP, with user review of motion drafts. Use for idle, walk, sprint and movement transitions; character generation uses townage-meshy.
 ---
 
 # TownAge locomotion production
@@ -11,13 +11,15 @@ Read the project's AGENTS.md and inspect the active character, movement code and
 
 Establish requested clips and the intended personality: relaxed short steps, restrained body bounce and soft arm swing are TownAge defaults. Start with Idle, Walk and Sprint unless the user requests another scope. Start/stop and turn clips follow a stable core set; do not silently expand to an eight-direction library.
 
-Inspect actual source and Unreal bone names, reference pose, units, mesh orientation and current gameplay speeds. Approved WalkDraft01 uses walking 68.5714cm/s; sprinting currently remains 440cm/s pending its own clip. Read code rather than assuming these values remain fixed. Reuse the approved character reference, without regenerating its concept art.
+Inspect actual source and Unreal bone names, reference pose, units, mesh orientation and current gameplay speeds. Meshy locomotion uses walking87cm/s and running304cm/s; legacy WalkDraft01 used68.5714cm/s and an accelerated-walk fallback at440cm/s. Read code rather than assuming these values remain fixed. Reuse the approved character reference, without regenerating its concept art.
 
 Check the shoulders, hips/crotch, knees, ankles/boots and satchel through representative movement ranges. A prior 25-degree joint test alone does not establish walking readiness. Correct limited skin weights as needed; material character redesign returns to the townage-character reference approval stage. Do not add deform bones or change the production skeleton hierarchy as an incidental animation edit.
 
 Add separate authoring controls for foot IK/poles, pelvis and arm/head posing when useful. Export baked deform bones, not control objects. Preserve root names, rest transforms, skin and existing compatible skeleton/physics assets.
 
 ## 2. Draft clips and required user direction checkpoint
+
+For a Meshy character, inspect its successful rig task's `basic_animations` first: walking and running may already be included without another charged animation request. Preview those on the actual skinned character before choosing paid alternatives. Use the live Meshy animation catalog for other actions; never guess action IDs. Preserve task receipts, and keep paid attempts within the stated budget. This route does not authorize procedural reconstruction of the character model.
 
 Build a first readable draft on the actual rig using contact, down, passing and up poses, their mirrored phases and appropriate interpolation. Work in a separate animation source file or versioned Actions so the final model and existing Actions are not overwritten. Simple periodic rotation curves can seed a blockout but do not qualify as a polished gait.
 

@@ -34,6 +34,8 @@ The existing Python MCP environment is reused below; Blender does not need to ru
 
 Validation on UE5.8.4 passed for skeletal and static local FBX fixtures, candidate BP creation,170cm placement scale, saved Skeleton/Physics dependencies and texture settings after a fresh process reload. Twelve automated tests passed, including destination protection, unsupported material sets and paid-call/receipt guards. These fixtures use the existing local character FBX, not a newly generated Meshy asset.
 
+The native main player now uses the approved Meshy character with its included free walking/running clips and a static standing support pose. Runtime samples are0/87/304cm/s in `Animations/Locomotion01/BS_TownKeeper_Meshy_Locomotion`. The original provider animation FBX files retain their mesh bind-pose carrier and are imported animation-only; no experimental skin repairs are applied. Automatic hair/pouch deformation remains a known limitation, retained under the user's bounded application request.
+
 ## Requests and receipts
 
 Use a separate ignored job folder such as `Saved/Meshy/TownKeeper_Meshy/run001/`. Request JSON has the form `{"tool": "tool_name", "arguments": {}}`. Preserve each returned task ID and type with its request and response. Use a new output filename for every call; the helper refuses overwriting an existing call receipt. Calls without `--output` get timestamped response filenames. The pre-call journal is `Saved/Meshy/calls.jsonl`.
