@@ -60,6 +60,13 @@ for label in SPEEDS:
     unreal.EditorAssetLibrary.save_loaded_asset(clip, False)
     clips[label] = clip
 
+# Preserve the live Idle upgrade when this earlier locomotion import is rerun.
+zero_speed_clip = unreal.load_asset(DEST + '/A_TownKeeper_Meshy_Idle')
+if zero_speed_clip:
+    assert zero_speed_clip.get_editor_property('skeleton') == skeleton
+else:
+    zero_speed_clip = clips['Standing']
+
 blend = unreal.load_asset(DEST + '/BS_TownKeeper_Meshy_Locomotion')
 if not blend:
     factory = unreal.BlendSpaceFactory1D()
@@ -76,7 +83,7 @@ blend.set_editor_property('blend_parameters', params)
 samples = []
 for label, speed in SPEEDS.items():
     sample = unreal.BlendSample()
-    sample.set_editor_property('animation', clips[label])
+    sample.set_editor_property('animation', zero_speed_clip if label == 'Standing' else clips[label])
     sample.set_editor_property('sample_value', unreal.Vector(speed, 0, 0))
     sample.set_editor_property('rate_scale', 1.0)
     samples.append(sample)
@@ -108,7 +115,7 @@ for path in BP_PATHS:
             component.set_editor_property('override_materials', [])
             component.set_editor_property('physics_asset_override', None)
             component.set_editor_property('relative_scale3d', unreal.Vector(1, 1, 1))
-            component.override_animation_data(clips['Standing'], True, True, 0, 1)
+            component.override_animation_data(zero_speed_clip, True, True, 0, 1)
             updated.append(component.get_path_name())
     unreal.BlueprintEditorLibrary.compile_blueprint(blueprint)
     unreal.EditorAssetLibrary.save_loaded_asset(blueprint, False)
@@ -124,7 +131,7 @@ for actor in unreal.get_editor_subsystem(unreal.EditorActorSubsystem).get_all_le
             component.set_editor_property('override_materials', [])
             component.set_editor_property('physics_asset_override', None)
             component.set_editor_property('relative_scale3d', unreal.Vector(1, 1, 1))
-            component.override_animation_data(clips['Standing'], True, True, 0, 1)
+            component.override_animation_data(zero_speed_clip, True, True, 0, 1)
         actor.set_actor_hidden_in_game(True)
         placements.append({'actor': actor.get_path_name(), 'transform': str(actor.get_actor_transform())})
 assert level.save_current_level()
@@ -132,7 +139,8 @@ assert unreal.EditorAssetLibrary.save_directory(DEST, only_if_is_dirty=False, re
 report = {'mesh': mesh.get_path_name(), 'skeleton': skeleton.get_path_name(),
           'blend_space': blend.get_path_name(), 'speeds_cm_s': SPEEDS,
           'clips': {key: {'path': clip.get_path_name(), 'duration_seconds': clip.get_play_length()} for key, clip in clips.items()},
-          'weights': weights, 'requires_post_build_weight_verification': not bool(weights),
+          'weights': weights, 'zero_speed_clip': zero_speed_clip.get_path_name(),
+          'requires_post_build_weight_verification': not bool(weights),
           'updated_blueprint_components': updated, 'preserved_placements': placements,
           'root_motion': False, 'model_or_weights_modified': False}
 (ROOT / 'Saved/meshy_locomotion_import_report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')

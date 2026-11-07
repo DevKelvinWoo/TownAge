@@ -163,10 +163,12 @@ void ATownAgePlayer::Tick(float DeltaSeconds)
     GetCharacterMovement()->MaxWalkSpeed = bSprinting ? RunSpeed : WalkSpeed;
     // All roles animate from actual movement, including replicated simulated proxies.
     const float PlanarSpeed = GetCharacterMovement()->IsMovingOnGround() ? GetVelocity().Size2D() : 0.f;
-    AnimationSpeed = FMath::FInterpTo(AnimationSpeed, PlanarSpeed < 3.f ? 0.f : PlanarSpeed, DeltaSeconds, 14.f);
+    // The Blend Space smooths sample weights once. Avoid filtering velocity a second time.
+    // Separate enter/exit thresholds keep tiny replicated or analog velocity noise at idle.
+    bAnimationMoving = PlanarSpeed > (bAnimationMoving ? 2.f : 4.f);
     if (UAnimSingleNodeInstance* Animation = GetMesh()->GetSingleNodeInstance())
     {
-        Animation->SetBlendSpacePosition(FVector(FMath::Clamp(AnimationSpeed, 0.f, RunSpeed), 0, 0));
+        Animation->SetBlendSpacePosition(FVector(bAnimationMoving ? FMath::Clamp(PlanarSpeed, 0.f, RunSpeed) : 0.f, 0, 0));
     }
     APlayerController* PC = Cast<APlayerController>(Controller);
     if (!PC || !IsLocallyControlled()) return;

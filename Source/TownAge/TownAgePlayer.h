@@ -42,7 +42,7 @@ private:
     bool bSprintRequested = false;
     bool bLastSentSprintRequest = false;
     FTownAgeStamina StaminaState;
-    float AnimationSpeed = 0.f;
+    bool bAnimationMoving = false;
     UPROPERTY()
     TObjectPtr<class UBlendSpace1D> WalkBlendSpace;
 protected:
