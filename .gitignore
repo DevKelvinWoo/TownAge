@@ -16,6 +16,8 @@ Saved/
 *.VC.db
 *.VC.opendb
 *.blend1
+__pycache__/
+*.pyc
 
 # User-specific Unreal files
 *.xcodeproj
@@ -30,4 +32,16 @@ Desktop.ini
 
 # Local Codex/OMX runtime state
 .omx/
+
+# Local game/art assets: publish code and configuration only.
+*.uasset
+*.umap
+*.blend
+*.fbx
+*.png
+*.jpg
+*.jpeg
+*.tga
+*.wav
+*.mp3
 

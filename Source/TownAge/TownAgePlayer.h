@@ -1,0 +1,50 @@
+#pragma once
+#include "CoreMinimal.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/GameModeBase.h"
+#include "TownAgeStamina.h"
+#include "TownAgePlayer.generated.h"
+
+UCLASS()
+class TOWNAGE_API ATownAgePlayer : public ACharacter
+{
+    GENERATED_BODY()
+public:
+    ATownAgePlayer();
+    virtual void Tick(float DeltaSeconds) override;
+    virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+    bool UsesTouchControls() const;
+    bool IsSprintControlHeld() const;
+    FVector2D TouchMove = FVector2D::ZeroVector;
+private:
+    void UpdateTouchControls(class APlayerController* PC);
+    int32 MoveFinger = INDEX_NONE;
+    int32 SprintFinger = INDEX_NONE;
+    bool bTouchSprintHeld = false;
+public:
+    UPROPERTY(Replicated, BlueprintReadOnly, Category="Stamina")
+    float Stamina = 100.f;
+    UPROPERTY(Replicated, BlueprintReadOnly, Category="Stamina")
+    bool bExhausted = false;
+    UPROPERTY(Replicated, BlueprintReadOnly, Category="Stamina")
+    bool bSprinting = false;
+private:
+    UFUNCTION(Server, Reliable)
+    void ServerSetSprintRequested(bool bRequested);
+    bool bSprintRequested = false;
+    bool bLastSentSprintRequest = false;
+    FTownAgeStamina StaminaState;
+protected:
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Camera")
+    TObjectPtr<class USpringArmComponent> CameraBoom;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Camera")
+    TObjectPtr<class UCameraComponent> FollowCamera;
+};
+
+UCLASS()
+class TOWNAGE_API ATownAgeGameMode : public AGameModeBase
+{
+    GENERATED_BODY()
+public:
+    ATownAgeGameMode();
+};
