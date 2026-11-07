@@ -38,18 +38,16 @@ TownAge is a cozy Unreal Engine game about charming characters cultivating and i
 - Hold Shift with movement to sprint. Stamina is server-authoritative: capacity 100, drain 20/s, regeneration 15/s after 1.5 seconds without sprinting, exhaustion unlock at 20. `ATownAgeHUD` shows a plain single-color stamina ring beside the character only while Shift is held.
 - This is the editor startup map and the current game default map.
 
-## Character production pipeline
+## 3D asset production pipeline — Meshy default
 
-- Use the installed `$townage-character` skill for future character creation and polishing. Its repository source is `Tools/Skills/townage-character/SKILL.md`; keep installed and repository copies aligned when updating it.
-
-- Use ImageGen for original character turnarounds and expression or outfit references.
-- Present generated/revised concept art and wait for the user's explicit art direction and approval of that version before starting Blender modeling. End the turn at this review checkpoint; elapsed time or the general character request does not count as approval. Reuse an already approved reference without asking again.
-- Build and refine production character meshes in Blender through Blender MCP.
-- Preserve reproducible Blender build scripts and source `.blend` files alongside exported FBX files.
-- Use a shared, Unreal-friendly skeleton and modular materials or parts wherever possible.
-- Import and validate Skeletal Mesh, Skeleton, Physics Asset, materials, and later animation assets through Unreal MCP.
-- Meshy may be used for prototypes or inspiration, but not as the default source for production character topology.
-- When animation is out of scope, export no animation clips while retaining an A-pose, skinned mesh, named bone hierarchy, and physics-ready structure.
+- Use `$townage-meshy` for new character/prop generation and Meshy handoff. Its repository source is `Tools/Skills/townage-meshy/SKILL.md`; operational commands are in `Tools/Meshy/README.md`.
+- Default route: approved reference image -> Meshy image/text-to-3D -> visual candidate review when direction is needed -> mobile-budget remesh -> character rigging -> local FBX/textures/manifest -> isolated Unreal candidate -> verification before requested production replacement.
+- Use ImageGen when new concept art is requested. Show a new or materially changed reference and wait for explicit art direction/approval before generation. Reuse an already approved version without asking again; a direct instruction to model a supplied image approves that input.
+- Meshy is the production generation default. Do not fall back to GPT-authored primitive/loft or procedural Blender modeling unless the user explicitly asks for that route. `$townage-character` remains available for explicitly requested Blender authoring/repair.
+- Keep `MESHY_API_KEY` only in the local environment. Never put it in chat, request files, committed configuration or logs. Setup/check requests do not authorize paid generation. Bound paid attempts, persist task IDs/receipts locally and reconcile ambiguous submissions instead of blindly retrying.
+- Remesh against a stated PC/mobile triangle/material/texture budget, then rig animation-ready characters. Keep source references, FBX, textures and task provenance local. When animation is out of scope, do not submit animation jobs or import optional example clips.
+- Import into versioned folders under `/Game/Characters/Meshy`; the candidate importer must not overwrite production characters, maps or the playable pawn. Verify actual appearance, normals, placed size, skeleton/weights and performance assumptions first. Meshy skeletons may require explicit animation retargeting.
+- Current main-character brief remains a long-haired female with TownAge's cute, rounded, cozy style. This records art direction only; pipeline setup does not start generating that character.
 
 ## Locomotion animation pipeline
 

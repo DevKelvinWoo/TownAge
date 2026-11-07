@@ -48,3 +48,7 @@ Desktop.ini
 *.mp4
 *.webm
 
+# Meshy generated output and local task/download metadata.
+meshy_output/
+ArtSource/Meshy/
+
