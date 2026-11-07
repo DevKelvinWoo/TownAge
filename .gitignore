@@ -1,0 +1,31 @@
+# Unreal Engine generated files
+Binaries/
+Build/
+DerivedDataCache/
+Intermediate/
+Saved/
+.vs/
+
+# IDE and editor files
+.idea/
+.vscode/
+*.sln
+*.suo
+*.opensdf
+*.sdf
+*.VC.db
+*.VC.opendb
+
+# User-specific Unreal files
+*.xcodeproj
+*.xcworkspace
+*.xcuserdata
+*.xcuserstate
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Local push-test remotes
+.git-test-remote*/
