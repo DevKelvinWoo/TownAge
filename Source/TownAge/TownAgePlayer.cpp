@@ -33,12 +33,12 @@ ATownAgePlayer::ATownAgePlayer()
     GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
     GetCharacterMovement()->MaxAcceleration = 1000.f;
     GetCharacterMovement()->BrakingDecelerationWalking = 1400.f;
-    static ConstructorHelpers::FObjectFinder<USkeletalMesh> Model(TEXT("/Game/Characters/Main/TownKeeper/ReferenceRevision04/SK_TownKeeper_Reference.SK_TownKeeper_Reference"));
+    static ConstructorHelpers::FObjectFinder<USkeletalMesh> Model(TEXT("/Game/Characters/Main/TownKeeper/FinalCharacter05/SK_TownKeeper_Reference05.SK_TownKeeper_Reference05"));
     if (Model.Succeeded()) GetMesh()->SetSkeletalMesh(Model.Object);
     GetMesh()->SetRelativeLocation(FVector(0.f, 0.f, -88.f));
     GetMesh()->SetRelativeRotation(FRotator(0.f, -90.f, 0.f));
     GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    static ConstructorHelpers::FObjectFinder<UBlendSpace1D> Locomotion(TEXT("/Game/Characters/Main/TownKeeper/Animations/BS_TownKeeper_Walk.BS_TownKeeper_Walk"));
+    static ConstructorHelpers::FObjectFinder<UBlendSpace1D> Locomotion(TEXT("/Game/Characters/Main/TownKeeper/FinalCharacter05/Animations/BS_TownKeeper_Walk.BS_TownKeeper_Walk"));
     WalkBlendSpace = Locomotion.Object;
     CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
     CameraBoom->SetupAttachment(RootComponent);
