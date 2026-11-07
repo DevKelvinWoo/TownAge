@@ -30,7 +30,7 @@ The existing Python MCP environment is reused below; Blender does not need to ru
 & 'C:\Users\Kelvin\.codex\mcp\blender-mcp\Scripts\python.exe' .\Tools\Meshy\meshy_mcp.py check
 ```
 
-`list-tools` saves live input schemas to `Saved/Meshy/list-tools.json`. `check` calls the read-only balance tool. This setup verified the official server handshake,28-tool catalog and authenticated balance response. No paid generation was executed. Local importer fixture verification is separate from a real Meshy generation/import run, which remains untested.
+`list-tools` saves live input schemas to `Saved/Meshy/list-tools.json`. `check` calls the read-only balance tool. The official server handshake,28-tool catalog and authenticated balance response are verified. The first approved TownKeeper character also completed actual Meshy generation, rigging, download and Unreal candidate import:30generation credits plus5rigging credits. Its local delivery is `ArtSource/Meshy/TownKeeper_Meshy/candidate_v001/manifest.json`; the candidate assets and saved review level are under `/Game/Characters/Meshy/TownKeeper_Meshy/candidate_v001`. Source measurements are170cm,30,986triangles, one material and24bones. This does not establish compatibility with the old walk or mobile device performance.
 
 Validation on UE5.8.4 passed for skeletal and static local FBX fixtures, candidate BP creation,170cm placement scale, saved Skeleton/Physics dependencies and texture settings after a fresh process reload. Twelve automated tests passed, including destination protection, unsupported material sets and paid-call/receipt guards. These fixtures use the existing local character FBX, not a newly generated Meshy asset.
 
