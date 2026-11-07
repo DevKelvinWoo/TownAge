@@ -4,6 +4,7 @@
 #include "Engine/Canvas.h"
 #include "InputCoreTypes.h"
 #include "TownAgeTouch.h"
+#include "Components/SkeletalMeshComponent.h"
 
 void ATownAgeHUD::DrawHUD()
 {
@@ -28,10 +29,34 @@ void ATownAgeHUD::DrawHUD()
     }
     if (!Player->IsSprintControlHeld()) return;
     FVector2D Center;
-    if (!PlayerOwner->ProjectWorldLocationToScreen(Player->GetActorLocation() + FVector(0, 0, 25), Center)) return;
-    Center.X = FMath::Clamp(Center.X + 55.f * Layout.UIScale, 25.f * Layout.UIScale, Canvas->SizeX - 25.f * Layout.UIScale);
+    if (!PlayerOwner->ProjectWorldLocationToScreen(Player->GetActorLocation() + FVector(0, 0, 25), Center, true)) return;
+    const float Radius = 16.f * Layout.UIScale;
+    const float Gap = 12.f * Layout.UIScale;
+    const float Margin = 8.f * Layout.UIScale;
+    // Use the visible mesh bounds, including the wide hair, instead of a fixed offset.
+    const FBox Bounds = Player->GetMesh()->Bounds.GetBox();
+    float Left = TNumericLimits<float>::Max();
+    float Right = TNumericLimits<float>::Lowest();
+    for (int32 Corner = 0; Corner < 8; ++Corner)
+    {
+        const FVector Point((Corner & 1) ? Bounds.Max.X : Bounds.Min.X,
+                            (Corner & 2) ? Bounds.Max.Y : Bounds.Min.Y,
+                            (Corner & 4) ? Bounds.Max.Z : Bounds.Min.Z);
+        FVector2D Screen;
+        if (!PlayerOwner->ProjectWorldLocationToScreen(Point, Screen, true)) return;
+        Left = FMath::Min(Left, float(Screen.X));
+        Right = FMath::Max(Right, float(Screen.X));
+    }
+    const float RightCenter = Right + Gap + Radius;
+    const float LeftCenter = Left - Gap - Radius;
+    if (RightCenter - Radius >= Margin && RightCenter + Radius <= Canvas->SizeX - Margin)
+        Center.X = RightCenter;
+    else if (LeftCenter - Radius >= Margin && LeftCenter + Radius <= Canvas->SizeX - Margin)
+        Center.X = LeftCenter;
+    else
+        return; // Avoid clamping the ring back over the character at a screen edge.
+    Center.Y = FMath::Clamp(Center.Y, double(Margin + Radius), double(Canvas->SizeY - Margin - Radius));
     constexpr int32 Segments = 96;
-    const float Radius = 21.f * Layout.UIScale;
     const float Fraction = FMath::Clamp(Player->Stamina / 100.f, 0.f, 1.f);
     const FLinearColor Fill(0.62f, 0.86f, 0.28f, 1.f);
     TArray<FCanvasUVTri> Triangles;
@@ -39,8 +64,8 @@ void ATownAgeHUD::DrawHUD()
     {
         const FVector2D OuterA = Center + FVector2D(FMath::Cos(A), FMath::Sin(A)) * Radius;
         const FVector2D OuterB = Center + FVector2D(FMath::Cos(B), FMath::Sin(B)) * Radius;
-        const FVector2D InnerA = Center + FVector2D(FMath::Cos(A), FMath::Sin(A)) * (Radius - 5.f * Layout.UIScale);
-        const FVector2D InnerB = Center + FVector2D(FMath::Cos(B), FMath::Sin(B)) * (Radius - 5.f * Layout.UIScale);
+        const FVector2D InnerA = Center + FVector2D(FMath::Cos(A), FMath::Sin(A)) * (Radius - 4.f * Layout.UIScale);
+        const FVector2D InnerB = Center + FVector2D(FMath::Cos(B), FMath::Sin(B)) * (Radius - 4.f * Layout.UIScale);
         FCanvasUVTri T;
         T.V0_Color = T.V1_Color = T.V2_Color = Color;
         T.V0_Pos = OuterA; T.V1_Pos = OuterB; T.V2_Pos = InnerB; Triangles.Add(T);
