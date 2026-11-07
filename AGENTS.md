@@ -42,6 +42,7 @@ TownAge is a cozy Unreal Engine game about charming characters cultivating and i
 - Use the installed `$townage-character` skill for future character creation and polishing. Its repository source is `Tools/Skills/townage-character/SKILL.md`; keep installed and repository copies aligned when updating it.
 
 - Use ImageGen for original character turnarounds and expression or outfit references.
+- Present generated/revised concept art and wait for the user's explicit art direction and approval of that version before starting Blender modeling. End the turn at this review checkpoint; elapsed time or the general character request does not count as approval. Reuse an already approved reference without asking again.
 - Build and refine production character meshes in Blender through Blender MCP.
 - Preserve reproducible Blender build scripts and source `.blend` files alongside exported FBX files.
 - Use a shared, Unreal-friendly skeleton and modular materials or parts wherever possible.

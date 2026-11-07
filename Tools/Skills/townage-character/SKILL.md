@@ -11,6 +11,14 @@ Use the project's AGENTS.md for the cozy village-life direction, multiplayer con
 
 For a new design, use the available ImageGen skill/tool for an original consistent front/side/back turnaround and beauty view. For revisions preserve the existing reference and identity. Save references under ArtSource/Characters/<character>/.
 
+### Required user art-direction checkpoint
+
+After generating or materially revising concept art, show the actual images to the user with a brief description of the design and ask for their direction or approval to model that specific version. End the turn and wait for the user's response so they can personally judge the art. Do not start Blender modeling, blockouts, rigging, modeling scripts, or Unreal asset creation during this waiting stage.
+
+Time passing, silence, an automatically selected option, or the original general request to create a character is not concept approval. If the user gives art changes, revise the concept and present it again for review. Begin modeling only after an explicit instruction such as "이 원화로 모델링 진행해" or equivalent approval of the shown version. Record the approved reference path/version and the user's art direction before proceeding.
+
+An existing reference that the user has already reviewed and explicitly approved for modeling satisfies this checkpoint; do not ask for the same approval again. Approval remains valid for polishing that follows the approved design. A material redesign requires a new concept review.
+
 Inspect the reference and current model before editing. Measure head/body ratio, silhouette, facial placement, hair flow, garment volume, hands and boots. Use shaped continuous surfaces where deformation or silhouette requires them. A visibly intersecting collection of primitive shapes is a blockout, not a finished character.
 
 Use Blender MCP to author and inspect the actual scene. Preserve editable .blend files and reproducible build/bake/export scripts. Work in a dedicated scene or explicit target collection so existing user scenes survive. Keep a candidate separate until verified.
