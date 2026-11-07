@@ -51,4 +51,5 @@ Desktop.ini
 # Meshy generated output and local task/download metadata.
 meshy_output/
 ArtSource/Meshy/
+ArtSource/Terrain/
 

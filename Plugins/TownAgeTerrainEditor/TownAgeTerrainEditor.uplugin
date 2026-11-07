@@ -1,0 +1,11 @@
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "1.0",
+  "FriendlyName": "TownAge Terrain Editor",
+  "Description": "Editor-only native Landscape import bridge for reproducible village terrain.",
+  "Category": "Editor",
+  "EnabledByDefault": true,
+  "CanContainContent": false,
+  "Modules": [{"Name": "TownAgeTerrainEditor", "Type": "Editor", "LoadingPhase": "PostEngineInit"}]
+}

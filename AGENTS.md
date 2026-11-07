@@ -38,6 +38,12 @@ TownAge is a cozy Unreal Engine game about charming characters cultivating and i
 - Hold Shift with movement to sprint. Stamina is server-authoritative: capacity 100, drain 20/s, regeneration 15/s after 1.5 seconds without sprinting, exhaustion unlock at 20. `ATownAgeHUD` shows a plain single-color stamina ring beside the character only while Shift is held.
 - This is the editor startup map and the current game default map.
 
+## Village terrain foundation
+
+- Village01 is `/Game/Maps/L_VillageTerrain_01`, a modern cozy pedestrian village foundation with grass, light paved paths and a small plaza. No farmland, crops, houses, trees or decorative objects are included; farming areas will be designed separately.
+- Use native Unreal Landscape for the ground. This first district is252x252m,253x253 samples and16components; it is a normal small map, not yet a World Partition streaming world. Keep the existing startup/game default map unless the user asks to change it.
+- Reproduction scripts and the Editor-only Landscape import bridge are documented in `Tools/Terrain/README.md`. Preserve concept/source maps locally; commit only scripts, plugin source and documentation. Never overwrite an existing level or terrain assets as an incidental regeneration step.
+
 ## 3D asset production pipeline — Meshy default
 
 - Use `$townage-meshy` for new character/prop generation and Meshy handoff. Its repository source is `Tools/Skills/townage-meshy/SKILL.md`; operational commands are in `Tools/Meshy/README.md`.
