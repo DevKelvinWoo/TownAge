@@ -11,6 +11,7 @@
 #include "TownAgeHUD.h"
 #include "Net/UnrealNetwork.h"
 #include "TownAgeTouch.h"
+#include "TownAgeInteraction.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
 #include "Animation/BlendSpace1D.h"
@@ -27,6 +28,7 @@ ATownAgePlayer::ATownAgePlayer()
 {
     PrimaryActorTick.bCanEverTick = true;
     bReplicates = true;
+    Interaction = CreateDefaultSubobject<UTownAgeInteractionComponent>(TEXT("Interaction"));
     GetCapsuleComponent()->InitCapsuleSize(38.f, 88.f);
     bUseControllerRotationYaw = false;
     GetCharacterMovement()->bOrientRotationToMovement = true;
@@ -123,6 +125,11 @@ bool ATownAgePlayer::IsSprintControlHeld() const
     return bTouchSprintHeld || (PC && (PC->IsInputKeyDown(EKeys::LeftShift) || PC->IsInputKeyDown(EKeys::RightShift)));
 }
 
+void ATownAgePlayer::RequestInteraction()
+{
+    if (Interaction) Interaction->TryInteract();
+}
+
 void ATownAgePlayer::UpdateTouchControls(APlayerController* PC)
 {
     TouchMove = FVector2D::ZeroVector; bTouchSprintHeld = false;
@@ -134,13 +141,24 @@ void ATownAgePlayer::UpdateTouchControls(APlayerController* PC)
     {
         float X, Y; bool bDown;
         PC->GetInputTouchState(ETouchIndex::Type(Finger), X, Y, bDown);
+        const bool bNewPress = bDown && !TouchWasDown[Finger];
+        TouchWasDown[Finger] = bDown;
         if (!bDown)
         {
             if (MoveFinger == Finger) MoveFinger = INDEX_NONE;
             if (SprintFinger == Finger) SprintFinger = INDEX_NONE;
+            if (InteractionFinger == Finger) InteractionFinger = INDEX_NONE;
             continue;
         }
         const FVector2D Position(X, Y);
+        // Consume a new press even when disabled. Holding a disabled button
+        // must not fire later merely because a target enters range.
+        if (bNewPress && InteractionFinger == INDEX_NONE && Finger != MoveFinger && Finger != SprintFinger && Layout.IsInteractButton(Position))
+        {
+            InteractionFinger = Finger;
+            RequestInteraction();
+        }
+        if (Finger == InteractionFinger) continue;
         if (MoveFinger == INDEX_NONE && Finger != SprintFinger && FVector2D::Distance(Position, Layout.MoveCenter) < Layout.MoveRadius * 1.5f) MoveFinger = Finger;
         if (SprintFinger == INDEX_NONE && Finger != MoveFinger && FVector2D::Distance(Position, Layout.SprintCenter) < Layout.SprintRadius * 1.3f) SprintFinger = Finger;
         if (Finger == MoveFinger) TouchMove = Layout.Movement(Position);
@@ -173,6 +191,7 @@ void ATownAgePlayer::Tick(float DeltaSeconds)
     APlayerController* PC = Cast<APlayerController>(Controller);
     if (!PC || !IsLocallyControlled()) return;
     UpdateTouchControls(PC);
+    if (PC->WasInputKeyJustPressed(EKeys::G)) RequestInteraction();
     // Fixed camera yaw -90: screen up is -Y and screen right is +X.
     const float Up = float(PC->IsInputKeyDown(EKeys::W)) - float(PC->IsInputKeyDown(EKeys::S));
     const float Right = float(PC->IsInputKeyDown(EKeys::D)) - float(PC->IsInputKeyDown(EKeys::A));

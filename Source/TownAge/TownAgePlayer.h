@@ -23,11 +23,17 @@ public:
     static FVector GetLocomotionSampleWeights(class UBlendSpace1D* BlendSpace, float Speed);
     bool UsesTouchControls() const;
     bool IsSprintControlHeld() const;
+    UFUNCTION(BlueprintPure, Category="TownAge|Interaction")
+    class UTownAgeInteractionComponent* GetInteractionComponent() const { return Interaction; }
+    UFUNCTION(BlueprintCallable, Category="TownAge|Interaction")
+    void RequestInteraction();
     FVector2D TouchMove = FVector2D::ZeroVector;
 private:
     void UpdateTouchControls(class APlayerController* PC);
     int32 MoveFinger = INDEX_NONE;
     int32 SprintFinger = INDEX_NONE;
+    int32 InteractionFinger = INDEX_NONE;
+    bool TouchWasDown[10] = {};
     bool bTouchSprintHeld = false;
 public:
     UPROPERTY(Replicated, BlueprintReadOnly, Category="Stamina")
@@ -46,6 +52,8 @@ private:
     UPROPERTY()
     TObjectPtr<class UBlendSpace1D> WalkBlendSpace;
 protected:
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="TownAge|Interaction")
+    TObjectPtr<class UTownAgeInteractionComponent> Interaction;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Camera")
     TObjectPtr<class USpringArmComponent> CameraBoom;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Camera")

@@ -1,0 +1,2 @@
+Name,Prompt,InteractionDistance,MaxVerticalDistance,MaxFacingAngleDegrees,Action,LogEvent
+DoorInspect,Inspect Door,200,150,100,LogOnly,Door.Inspect

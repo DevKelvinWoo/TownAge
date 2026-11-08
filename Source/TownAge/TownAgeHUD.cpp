@@ -5,6 +5,7 @@
 #include "InputCoreTypes.h"
 #include "TownAgeTouch.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "TownAgeInteraction.h"
 
 void ATownAgeHUD::DrawHUD()
 {
@@ -12,20 +13,63 @@ void ATownAgeHUD::DrawHUD()
     const ATownAgePlayer* Player = PlayerOwner ? Cast<ATownAgePlayer>(PlayerOwner->GetPawn()) : nullptr;
     if (!Canvas || !Player) return;
     const FTownAgeTouchLayout Layout(FVector2D(Canvas->SizeX, Canvas->SizeY));
+    auto Outline = [&](FVector2D C, float Radius, FLinearColor Color)
+    {
+        for (int32 I = 0; I < 64; ++I)
+        {
+            const float A = I * 2.f * PI / 64, B = (I + 1) * 2.f * PI / 64;
+            DrawLine(C.X + Radius * FMath::Cos(A), C.Y + Radius * FMath::Sin(A), C.X + Radius * FMath::Cos(B), C.Y + Radius * FMath::Sin(B), Color, 3.f * Layout.UIScale);
+        }
+    };
+    auto InteractionButton = [&](FVector2D Center, float Radius, bool bEnabled, const FString& Label)
+    {
+        const FLinearColor Fill = bEnabled ? FLinearColor(.25f, .44f, .20f, .95f) : FLinearColor(.13f, .15f, .13f, .65f);
+        const FLinearColor Foreground = bEnabled ? FLinearColor::White : FLinearColor(.58f, .61f, .58f, .8f);
+        TArray<FCanvasUVTri> Disc;
+        Disc.Reserve(64);
+        for (int32 I = 0; I < 64; ++I)
+        {
+            const float A = I * 2.f * PI / 64, B = (I + 1) * 2.f * PI / 64;
+            FCanvasUVTri Triangle;
+            Triangle.V0_Pos = Center;
+            Triangle.V1_Pos = Center + FVector2D(FMath::Cos(A), FMath::Sin(A)) * Radius;
+            Triangle.V2_Pos = Center + FVector2D(FMath::Cos(B), FMath::Sin(B)) * Radius;
+            Triangle.V0_Color = Triangle.V1_Color = Triangle.V2_Color = Fill;
+            Disc.Add(Triangle);
+        }
+        Canvas->K2_DrawTriangle(nullptr, Disc);
+        Outline(Center, Radius, Foreground);
+        float Width, Height;
+        GetTextSize(Label, Width, Height, nullptr, Layout.UIScale);
+        DrawText(Label, Foreground, Center.X - Width * .5f, Center.Y - Height * .5f, nullptr, Layout.UIScale);
+    };
+    const UTownAgeInteractionComponent* Interaction = Player->GetInteractionComponent();
+    const bool bCanInteract = Interaction && Interaction->HasInteractable();
     if (Player->UsesTouchControls())
     {
-        auto Outline = [&](FVector2D C, float Radius, FLinearColor Color)
-        {
-            for (int32 I = 0; I < 64; ++I)
-            {
-                const float A = I * 2.f * PI / 64, B = (I + 1) * 2.f * PI / 64;
-                DrawLine(C.X + Radius * FMath::Cos(A), C.Y + Radius * FMath::Sin(A), C.X + Radius * FMath::Cos(B), C.Y + Radius * FMath::Sin(B), Color, 3.f * Layout.UIScale);
-            }
-        };
         Outline(Layout.MoveCenter, Layout.MoveRadius, FLinearColor(1, 1, 1, .6f));
         Outline(Layout.MoveCenter + Player->TouchMove * Layout.MoveRadius * .7f, 23.f * Layout.UIScale, FLinearColor(1, 1, 1, .8f));
         Outline(Layout.SprintCenter, Layout.SprintRadius, Player->IsSprintControlHeld() ? FLinearColor(.62f,.86f,.28f) : FLinearColor(1,1,1,.65f));
         DrawText(TEXT("RUN"), FLinearColor::White, Layout.SprintCenter.X - 18.f * Layout.UIScale, Layout.SprintCenter.Y - 8.f * Layout.UIScale, nullptr, Layout.UIScale);
+        InteractionButton(Layout.InteractCenter, Layout.InteractRadius, bCanInteract, TEXT("USE"));
+    }
+    else if (bCanInteract)
+    {
+        FVector2D PromptCenter;
+        if (PlayerOwner->ProjectWorldLocationToScreen(Interaction->GetSelectedTarget()->GetInteractionPoint() + FVector(0, 0, 35), PromptCenter, true))
+        {
+            const float Radius = 25.f * Layout.UIScale;
+            const float Margin = 8.f * Layout.UIScale;
+            if (PromptCenter.X - Radius >= Margin && PromptCenter.X + Radius <= Canvas->SizeX - Margin &&
+                PromptCenter.Y - Radius >= Margin && PromptCenter.Y + Radius <= Canvas->SizeY - Margin)
+            {
+                InteractionButton(PromptCenter, Radius, true, TEXT("G"));
+                const FString Prompt = Interaction->GetPrompt().ToString();
+                float Width, Height;
+                GetTextSize(Prompt, Width, Height, nullptr, Layout.UIScale);
+                DrawText(Prompt, FLinearColor::White, PromptCenter.X - Width * .5f, PromptCenter.Y + Radius + 5.f * Layout.UIScale, nullptr, Layout.UIScale);
+            }
+        }
     }
     if (!Player->IsSprintControlHeld()) return;
     FVector2D Center;
