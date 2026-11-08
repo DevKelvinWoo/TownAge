@@ -1,0 +1,254 @@
+{
+  "schemaVersion": 1,
+  "layoutTransform": {
+    "rotation": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+    },
+    "translation": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "scale3D": {
+      "x": 1,
+      "y": 1,
+      "z": 1
+    }
+  },
+  "types": [
+    {
+      "typeId": "road.path",
+      "kind": "Road",
+      "displayName": "Path",
+      "mesh": "None",
+      "material": "None",
+      "previewColor": {
+        "r": 0.3199999928474426,
+        "g": 0.4000000059604645,
+        "b": 0.4300000071525574,
+        "a": 1
+      },
+      "defaultHeightCm": 300
+    },
+    {
+      "typeId": "road.stone",
+      "kind": "Road",
+      "displayName": "Stone road",
+      "mesh": "None",
+      "material": "None",
+      "previewColor": {
+        "r": 0.6499999761581421,
+        "g": 0.6600000262260437,
+        "b": 0.6200000047683716,
+        "a": 1
+      },
+      "defaultHeightCm": 300
+    },
+    {
+      "typeId": "field.soil",
+      "kind": "Field",
+      "displayName": "Soil field",
+      "mesh": "None",
+      "material": "None",
+      "previewColor": {
+        "r": 0.36000001430511475,
+        "g": 0.1899999976158142,
+        "b": 0.07500000298023224,
+        "a": 1
+      },
+      "defaultHeightCm": 300
+    },
+    {
+      "typeId": "field.orchard",
+      "kind": "Field",
+      "displayName": "Orchard field",
+      "mesh": "None",
+      "material": "None",
+      "previewColor": {
+        "r": 0.2800000011920929,
+        "g": 0.5,
+        "b": 0.14000000059604645,
+        "a": 1
+      },
+      "defaultHeightCm": 300
+    },
+    {
+      "typeId": "building.house",
+      "kind": "Building",
+      "displayName": "House",
+      "mesh": "None",
+      "material": "None",
+      "previewColor": {
+        "r": 0.25999999046325684,
+        "g": 0.5,
+        "b": 0.7200000286102295,
+        "a": 1
+      },
+      "defaultHeightCm": 300
+    },
+    {
+      "typeId": "building.shop",
+      "kind": "Building",
+      "displayName": "Shop",
+      "mesh": "None",
+      "material": "None",
+      "previewColor": {
+        "r": 0.7799999713897705,
+        "g": 0.47999998927116394,
+        "b": 0.1599999964237213,
+        "a": 1
+      },
+      "defaultHeightCm": 450
+    }
+  ],
+  "elements": [
+    {
+      "id": "98FFE7A624075F8A951C689964CC6D9E",
+      "label": "Main route",
+      "kind": "Road",
+      "typeId": "road.path",
+      "points": [
+        {
+          "x": -4000,
+          "y": 0,
+          "z": 0
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        {
+          "x": 0,
+          "y": 3500,
+          "z": 0
+        }
+      ],
+      "widthCm": 400,
+      "heightCm": 300
+    },
+    {
+      "id": "71D4FB6CAE9D58DCA168077AFFDD9803",
+      "label": "Southern road",
+      "kind": "Road",
+      "typeId": "road.stone",
+      "points": [
+        {
+          "x": -3700,
+          "y": -3300,
+          "z": 0
+        },
+        {
+          "x": 3500,
+          "y": -3300,
+          "z": 0
+        }
+      ],
+      "widthCm": 300,
+      "heightCm": 300
+    },
+    {
+      "id": "02B00FB559095A738115513D6438E4FC",
+      "label": "Vegetable field",
+      "kind": "Field",
+      "typeId": "field.soil",
+      "points": [
+        {
+          "x": -3500,
+          "y": -2500,
+          "z": 0
+        },
+        {
+          "x": -1000,
+          "y": -600,
+          "z": 0
+        }
+      ],
+      "widthCm": 400,
+      "heightCm": 300
+    },
+    {
+      "id": "E9D261B0491F59ABAD7BE7A878572C9A",
+      "label": "Orchard area",
+      "kind": "Field",
+      "typeId": "field.orchard",
+      "points": [
+        {
+          "x": 800,
+          "y": -2300,
+          "z": 0
+        },
+        {
+          "x": 3200,
+          "y": -500,
+          "z": 0
+        }
+      ],
+      "widthCm": 400,
+      "heightCm": 300
+    },
+    {
+      "id": "354CD9C742C353BB8ABB859EF769689A",
+      "label": "Home A",
+      "kind": "Building",
+      "typeId": "building.house",
+      "points": [
+        {
+          "x": -2400,
+          "y": 700,
+          "z": 0
+        },
+        {
+          "x": -1400,
+          "y": 1500,
+          "z": 0
+        }
+      ],
+      "widthCm": 400,
+      "heightCm": 500
+    },
+    {
+      "id": "93B24E4771965C689C7C1573213AD775",
+      "label": "Village shop",
+      "kind": "Building",
+      "typeId": "building.shop",
+      "points": [
+        {
+          "x": 1000,
+          "y": 600,
+          "z": 0
+        },
+        {
+          "x": 2400,
+          "y": 1700,
+          "z": 0
+        }
+      ],
+      "widthCm": 400,
+      "heightCm": 450
+    },
+    {
+      "id": "E9B4FCA2AF4B5624B5E0744C09438022",
+      "label": "Home B",
+      "kind": "Building",
+      "typeId": "building.house",
+      "points": [
+        {
+          "x": -3300,
+          "y": 2100,
+          "z": 0
+        },
+        {
+          "x": -2400,
+          "y": 2900,
+          "z": 0
+        }
+      ],
+      "widthCm": 400,
+      "heightCm": 400
+    }
+  ]
+}

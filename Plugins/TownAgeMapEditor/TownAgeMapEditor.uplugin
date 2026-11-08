@@ -1,0 +1,11 @@
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "0.1",
+  "FriendlyName": "TownAge Map Layout",
+  "Description": "Data-driven road, field and building layout authoring with replaceable placeholder geometry.",
+  "Category": "TownAge",
+  "EnabledByDefault": true,
+  "CanContainContent": false,
+  "Modules": [{ "Name": "TownAgeMapEditor", "Type": "Editor", "LoadingPhase": "PostEngineInit" }]
+}
