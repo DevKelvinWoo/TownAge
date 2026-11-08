@@ -9,6 +9,7 @@
 #include "UObject/ConstructorHelpers.h"
 #include "InputCoreTypes.h"
 #include "TownAgeHUD.h"
+#include "TownAgePlayerController.h"
 #include "Net/UnrealNetwork.h"
 #include "TownAgeTouch.h"
 #include "TownAgeInteraction.h"
@@ -124,12 +125,16 @@ bool ATownAgePlayer::UsesTouchControls() const
 
 bool ATownAgePlayer::IsSprintControlHeld() const
 {
+    const auto* ChatPC = Cast<ATownAgePlayerController>(Controller);
+    if (ChatPC && ChatPC->IsChatOpen()) return false;
     const APlayerController* PC = Cast<APlayerController>(Controller);
     return bTouchSprintHeld || (PC && (PC->IsInputKeyDown(EKeys::LeftShift) || PC->IsInputKeyDown(EKeys::RightShift)));
 }
 
 void ATownAgePlayer::RequestInteraction()
 {
+    const auto* PC = Cast<ATownAgePlayerController>(Controller);
+    if (PC && PC->IsChatOpen()) return;
     if (!IsDoorBusy() && Interaction) Interaction->TryInteract();
 }
 
@@ -201,7 +206,8 @@ void ATownAgePlayer::Tick(float DeltaSeconds)
     APlayerController* PC = Cast<APlayerController>(Controller);
     if (!PC || !IsLocallyControlled()) return;
     UpdateTouchControls(PC);
-    if (IsDoorBusy())
+    const auto* ChatPC = Cast<ATownAgePlayerController>(PC);
+    if (IsDoorBusy() || (ChatPC && ChatPC->IsChatOpen()))
     {
         // Continue sampling touches so a held disabled interaction button
         // cannot become a new press as the traversal finishes.
@@ -247,4 +253,5 @@ ATownAgeGameMode::ATownAgeGameMode()
 {
     DefaultPawnClass = ATownAgePlayer::StaticClass();
     HUDClass = ATownAgeHUD::StaticClass();
+    PlayerControllerClass = ATownAgePlayerController::StaticClass();
 }
