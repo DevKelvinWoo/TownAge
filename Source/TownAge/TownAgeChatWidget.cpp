@@ -2,6 +2,7 @@
 #include "TownAgePlayerController.h"
 #include "TownAgePlayer.h"
 #include "TownAgeChat.h"
+#include "TownAgeTouch.h"
 #include "Blueprint/WidgetTree.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "Components/Border.h"
@@ -70,7 +71,7 @@ void UTownAgeChatWidget::NativeOnInitialized()
     Canvas->AddChild(Panel);
     UVerticalBox* Content = WidgetTree->ConstructWidget<UVerticalBox>(); Panel->AddChild(Content);
     UHorizontalBox* Header = WidgetTree->ConstructWidget<UHorizontalBox>(); Content->AddChild(Header);
-    UHorizontalBoxSlot* TitleSlot = Header->AddChildToHorizontalBox(Text(TEXT("Village chat"), 15));
+    UHorizontalBoxSlot* TitleSlot = Header->AddChildToHorizontalBox(Text(bMobile ? TEXT("Chat") : TEXT("Village chat"), 15));
     TitleSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
     UTextBlock* CloseLabel;
     CloseButton = Button(TEXT("Close"), CloseLabel); Header->AddChild(CloseButton);
@@ -116,7 +117,8 @@ void UTownAgeChatWidget::NativeTick(const FGeometry& Geometry, float DeltaTime)
     Super::NativeTick(Geometry, DeltaTime);
     // Local UMG units already include viewport DPI. SafeZone adds device cutout padding.
     const FVector2D Size = Geometry.GetLocalSize();
-    const float TouchTarget = 48.f / FMath::Max(.1f, UWidgetLayoutLibrary::GetViewportScale(this));
+    const float ViewportScale = FMath::Max(.1f, UWidgetLayoutLibrary::GetViewportScale(this));
+    const float TouchTarget = 48.f / ViewportScale;
     const float FontScale = bMobile ? TouchTarget / 48.f : 1.f;
     for (int32 I = 0; I < Labels.Num(); ++I)
     {
@@ -134,7 +136,14 @@ void UTownAgeChatWidget::NativeTick(const FGeometry& Geometry, float DeltaTime)
     }
     auto* PanelSlot = Cast<UCanvasPanelSlot>(Panel->Slot);
     auto* LauncherSlot = Cast<UCanvasPanelSlot>(Launcher->Slot);
-    const float Width = FMath::Min(430.f * FontScale, float(Size.X * (bMobile ? .65 : .6)));
+    float Width = FMath::Min(430.f * FontScale, float(Size.X * (bMobile ? .65 : .6)));
+    if (bMobile)
+    {
+        // Leave the top-center clock visible while the keyboard composer is open.
+        const FTownAgeTouchLayout ScreenLayout(Size * ViewportScale);
+        const float ClockHalfWidth = 90.f * FMath::Max(.85f, ScreenLayout.UIScale);
+        Width = FMath::Min(Width, FMath::Max(0.f, float(Size.X * .42f) - (ClockHalfWidth + 12.f) / ViewportScale));
+    }
     PanelSlot->SetAnchors(FAnchors(0, bMobile ? 0 : 1));
     PanelSlot->SetAlignment(FVector2D(0, bMobile ? 0 : 1));
     PanelSlot->SetPosition(FVector2D(bMobile ? Size.X * .08 : 20, bMobile ? 12 : -76));

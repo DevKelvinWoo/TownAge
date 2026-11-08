@@ -6,13 +6,34 @@
 #include "TownAgeTouch.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "TownAgeInteraction.h"
+#include "TownAgeGameState.h"
+#include "TownAgeTime.h"
+#include "Engine/Engine.h"
+#include "Engine/World.h"
 
 void ATownAgeHUD::DrawHUD()
 {
     Super::DrawHUD();
-    const ATownAgePlayer* Player = PlayerOwner ? Cast<ATownAgePlayer>(PlayerOwner->GetPawn()) : nullptr;
-    if (!Canvas || !Player) return;
+    if (!Canvas) return;
     const FTownAgeTouchLayout Layout(FVector2D(Canvas->SizeX, Canvas->SizeY));
+    if (const auto* Time = GetWorld()->GetGameState<ATownAgeGameState>(); Time && Time->IsClockReady())
+    {
+        const float Scale = FMath::Max(.85f, Layout.UIScale);
+        const float Center = Canvas->SizeX * .5f;
+        const float Top = FMath::Max(18.f * Scale, Canvas->SafeZonePadY + 10.f * Scale);
+        const float Width = 180.f * Scale;
+        DrawRect(FLinearColor(.035f, .055f, .045f, .7f), Center - Width * .5f, Top, Width, 66.f * Scale);
+        const FString Clock = TownAgeTime::FormatClock(Time->GetTimeOfDayHours());
+        const FString Phase = FString::Printf(TEXT("Day %d  |  %s"), Time->GetDayNumber(), TownAgeTime::PhaseName(Time->GetTimeOfDayHours()));
+        UFont* Font = GEngine->GetMediumFont();
+        float TextWidth, TextHeight;
+        GetTextSize(Clock, TextWidth, TextHeight, Font, 1.65f * Scale);
+        DrawText(Clock, FLinearColor(.98f, .97f, .88f), Center - TextWidth * .5f, Top + 7.f * Scale, Font, 1.65f * Scale);
+        GetTextSize(Phase, TextWidth, TextHeight, Font, .9f * Scale);
+        DrawText(Phase, FLinearColor(.82f, .88f, .80f), Center - TextWidth * .5f, Top + 43.f * Scale, Font, .9f * Scale);
+    }
+    const ATownAgePlayer* Player = PlayerOwner ? Cast<ATownAgePlayer>(PlayerOwner->GetPawn()) : nullptr;
+    if (!Player) return;
     auto Outline = [&](FVector2D C, float Radius, FLinearColor Color)
     {
         for (int32 I = 0; I < 64; ++I)

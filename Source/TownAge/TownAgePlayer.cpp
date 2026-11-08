@@ -10,6 +10,7 @@
 #include "InputCoreTypes.h"
 #include "TownAgeHUD.h"
 #include "TownAgePlayerController.h"
+#include "TownAgeGameState.h"
 #include "Net/UnrealNetwork.h"
 #include "TownAgeTouch.h"
 #include "TownAgeInteraction.h"
@@ -254,4 +255,5 @@ ATownAgeGameMode::ATownAgeGameMode()
     DefaultPawnClass = ATownAgePlayer::StaticClass();
     HUDClass = ATownAgeHUD::StaticClass();
     PlayerControllerClass = ATownAgePlayerController::StaticClass();
+    GameStateClass = ATownAgeGameState::StaticClass();
 }
