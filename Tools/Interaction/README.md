@@ -1,7 +1,9 @@
 # Interaction prototype
 
-The cottage door currently executes a server-side log only. It does not open or
-play an animation. `G` and the mobile circular `USE` button share the same request
+The common framework supports a log-only fixture and the cottage's door-traversal
+action. See `Tools/Doors/README.md` for the animated enter/exit integration.
+`DoorInspect` remains the server-side log fixture; the live cottage uses
+`DoorEnter`/`DoorExit`. `G` and the mobile circular `USE` button share the same request
 path. The PC prompt appears above the selected target; mobile keeps the button
 visible in a disabled state when no interaction is available. A touch is consumed
 on press, so holding a disabled button cannot later trigger an action.
@@ -26,8 +28,8 @@ enables/disables the target.
 To implement subsequent doors, chests, NPCs or gathering, extend the action enum
 and native dispatcher, or subclass the target component and override the
 authority-only `ExecuteInteraction` event. Keep eligibility and server validation
-in the common component. The current data contains only the implemented door
-log action; other gameplay behaviors are not implied by placeholder rows.
+in the common component. The door transition is implemented by its portal
+component; chest, NPC and gathering behaviors are not implied by placeholder rows.
 
 ## Selection and authority
 
@@ -51,6 +53,9 @@ targets; large streamed worlds may need a spatial index when measured.
 - Runtime: verify the native player is out of range at PlayerStart; approach the
   door and face it to show `G`; pressing it writes `LogTownAgeInteraction` with
   `Event=Door.Inspect`. Turn away or leave range and verify no action is emitted.
+  This check uses the `DoorInspect` fixture; the live door now runs the traversal
+  checks in `Tools/Doors` instead. `setup_interaction.py` deliberately restores
+  the log-only fixture, so run `setup_door_travel.py` to restore animated travel.
 - Desktop touch preview: launch with `-faketouches`; check disabled/enabled
   circular `USE`, one action per press, and concurrent movement/sprint fingers.
 - Remote-client check: register `verify_network.py`, then use a two-player

@@ -2,6 +2,8 @@
 
 #include "GameFramework/Pawn.h"
 #include "Net/UnrealNetwork.h"
+#include "TownAgePlayer.h"
+#include "TownAgeDoor.h"
 
 DEFINE_LOG_CATEGORY(LogTownAgeInteraction);
 
@@ -139,7 +141,14 @@ bool UTownAgeInteractionTargetComponent::CanInteract(const APawn* Interactor) co
     if (!bInteractionEnabled || !IsValid(GetOwner()) || !IsValid(Interactor)
         || GetOwner()->IsActorBeingDestroyed() || Interactor->GetWorld() != GetWorld())
         return false;
+    if (const auto* Player = Cast<ATownAgePlayer>(Interactor); Player && Player->IsDoorBusy())
+        return false;
     const auto* Row = GetDefinition();
+    if (Row && Row->Action == ETownAgeInteractionAction::DoorTransition)
+    {
+        const auto* Portal = GetOwner()->FindComponentByClass<UTownAgeDoorPortalComponent>();
+        if (!Portal || !Portal->CanUse(Interactor)) return false;
+    }
     TownAgeInteraction::FCandidateScore Score;
     const FVector Point = GetInteractionPoint();
     const FVector Approach = GetOwner()->GetActorTransform().TransformVectorNoScale(LocalApproachDirection);
@@ -153,6 +162,12 @@ void UTownAgeInteractionTargetComponent::ExecuteInteraction_Implementation(APawn
     if (!GetOwner() || !GetOwner()->HasAuthority() || !CanInteract(Interactor))
         return;
     const FTownAgeInteractionRow* Row = GetDefinition();
+    if (Row && Row->Action == ETownAgeInteractionAction::DoorTransition)
+    {
+        if (auto* Portal = GetOwner()->FindComponentByClass<UTownAgeDoorPortalComponent>())
+            Portal->TryStart(Interactor);
+        return;
+    }
     if (Row && Row->Action == ETownAgeInteractionAction::LogOnly)
     {
         UE_LOG(LogTownAgeInteraction, Log, TEXT("Interaction executed: Event=%s Row=%s Target=%s Interactor=%s Action=LogOnly"),

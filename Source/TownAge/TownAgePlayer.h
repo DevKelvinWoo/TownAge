@@ -27,6 +27,10 @@ public:
     class UTownAgeInteractionComponent* GetInteractionComponent() const { return Interaction; }
     UFUNCTION(BlueprintCallable, Category="TownAge|Interaction")
     void RequestInteraction();
+    UFUNCTION(BlueprintPure, Category="TownAge|Door")
+    class UTownAgeDoorTraversalComponent* GetDoorTraversalComponent() const { return DoorTraversal; }
+    UFUNCTION(BlueprintPure, Category="TownAge|Door")
+    bool IsDoorBusy() const;
     FVector2D TouchMove = FVector2D::ZeroVector;
 private:
     void UpdateTouchControls(class APlayerController* PC);
@@ -52,6 +56,8 @@ private:
     UPROPERTY()
     TObjectPtr<class UBlendSpace1D> WalkBlendSpace;
 protected:
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="TownAge|Door")
+    TObjectPtr<class UTownAgeDoorTraversalComponent> DoorTraversal;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="TownAge|Interaction")
     TObjectPtr<class UTownAgeInteractionComponent> Interaction;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Camera")

@@ -1,2 +1,4 @@
 Name,Prompt,InteractionDistance,MaxVerticalDistance,MaxFacingAngleDegrees,Action,LogEvent
 DoorInspect,Inspect Door,200,150,100,LogOnly,Door.Inspect
+DoorEnter,Enter House,200,150,100,DoorTransition,Door.Enter
+DoorExit,Leave House,180,150,100,DoorTransition,Door.Exit

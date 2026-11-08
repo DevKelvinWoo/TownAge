@@ -12,6 +12,8 @@
 #include "Net/UnrealNetwork.h"
 #include "TownAgeTouch.h"
 #include "TownAgeInteraction.h"
+#include "TownAgeDoor.h"
+#include "TownAgeDoorAnimInstance.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
 #include "Animation/BlendSpace1D.h"
@@ -29,6 +31,7 @@ ATownAgePlayer::ATownAgePlayer()
     PrimaryActorTick.bCanEverTick = true;
     bReplicates = true;
     Interaction = CreateDefaultSubobject<UTownAgeInteractionComponent>(TEXT("Interaction"));
+    DoorTraversal = CreateDefaultSubobject<UTownAgeDoorTraversalComponent>(TEXT("DoorTraversal"));
     GetCapsuleComponent()->InitCapsuleSize(38.f, 88.f);
     bUseControllerRotationYaw = false;
     GetCharacterMovement()->bOrientRotationToMovement = true;
@@ -62,12 +65,12 @@ ATownAgePlayer::ATownAgePlayer()
 void ATownAgePlayer::BeginPlay()
 {
     Super::BeginPlay();
+    GetMesh()->SetAnimInstanceClass(UTownAgeDoorAnimInstance::StaticClass());
     if (WalkBlendSpace)
     {
-        GetMesh()->SetAnimationMode(EAnimationMode::AnimationSingleNode);
-        GetMesh()->SetAnimation(WalkBlendSpace);
-        if (UAnimSingleNodeInstance* Animation = GetMesh()->GetSingleNodeInstance())
+        if (UAnimSingleNodeInstance* Animation = Cast<UAnimSingleNodeInstance>(GetMesh()->GetAnimInstance()))
         {
+            Animation->SetAnimationAsset(WalkBlendSpace, true, 1.f);
             Animation->SetLooping(true);
             Animation->SetPlaying(true);
             Animation->SetPlayRate(1.f);
@@ -127,7 +130,12 @@ bool ATownAgePlayer::IsSprintControlHeld() const
 
 void ATownAgePlayer::RequestInteraction()
 {
-    if (Interaction) Interaction->TryInteract();
+    if (!IsDoorBusy() && Interaction) Interaction->TryInteract();
+}
+
+bool ATownAgePlayer::IsDoorBusy() const
+{
+    return DoorTraversal && DoorTraversal->IsBusy();
 }
 
 void ATownAgePlayer::UpdateTouchControls(APlayerController* PC)
@@ -171,7 +179,8 @@ void ATownAgePlayer::Tick(float DeltaSeconds)
     Super::Tick(DeltaSeconds);
     if (HasAuthority())
     {
-        bSprinting = bSprintRequested && !StaminaState.bExhausted && StaminaState.Value > 0.f
+        if (IsDoorBusy()) bSprintRequested = false;
+        bSprinting = !IsDoorBusy() && bSprintRequested && !StaminaState.bExhausted && StaminaState.Value > 0.f
             && GetVelocity().SizeSquared2D() > 100.f && GetCharacterMovement()->IsMovingOnGround();
         StaminaState.Update(DeltaSeconds, bSprinting);
         Stamina = StaminaState.Value;
@@ -184,13 +193,27 @@ void ATownAgePlayer::Tick(float DeltaSeconds)
     // The Blend Space smooths sample weights once. Avoid filtering velocity a second time.
     // Separate enter/exit thresholds keep tiny replicated or analog velocity noise at idle.
     bAnimationMoving = PlanarSpeed > (bAnimationMoving ? 2.f : 4.f);
-    if (UAnimSingleNodeInstance* Animation = GetMesh()->GetSingleNodeInstance())
+    if (!DoorTraversal || !DoorTraversal->GetActiveAnimation())
+    if (UAnimSingleNodeInstance* Animation = Cast<UAnimSingleNodeInstance>(GetMesh()->GetAnimInstance()))
     {
         Animation->SetBlendSpacePosition(FVector(bAnimationMoving ? FMath::Clamp(PlanarSpeed, 0.f, RunSpeed) : 0.f, 0, 0));
     }
     APlayerController* PC = Cast<APlayerController>(Controller);
     if (!PC || !IsLocallyControlled()) return;
     UpdateTouchControls(PC);
+    if (IsDoorBusy())
+    {
+        // Continue sampling touches so a held disabled interaction button
+        // cannot become a new press as the traversal finishes.
+        TouchMove = FVector2D::ZeroVector;
+        bTouchSprintHeld = false;
+        if (bLastSentSprintRequest)
+        {
+            bLastSentSprintRequest = false;
+            ServerSetSprintRequested(false);
+        }
+        return;
+    }
     if (PC->WasInputKeyJustPressed(EKeys::G)) RequestInteraction();
     // Fixed camera yaw -90: screen up is -Y and screen right is +X.
     const float Up = float(PC->IsInputKeyDown(EKeys::W)) - float(PC->IsInputKeyDown(EKeys::S));

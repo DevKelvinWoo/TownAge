@@ -71,7 +71,7 @@ void ATownAgeHUD::DrawHUD()
             }
         }
     }
-    if (!Player->IsSprintControlHeld()) return;
+    if (!Player->IsSprintControlHeld() || Player->IsDoorBusy()) return;
     FVector2D Center;
     if (!PlayerOwner->ProjectWorldLocationToScreen(Player->GetActorLocation() + FVector(0, 0, 25), Center, true)) return;
     const float Radius = 16.f * Layout.UIScale;

@@ -44,6 +44,13 @@ TownAge is a cozy Unreal Engine game about charming characters cultivating and i
 - Use native Unreal Landscape for the ground. This first district is252x252m,253x253 samples and16components; it is a normal small map, not yet a World Partition streaming world. Keep the existing startup/game default map unless the user asks to change it.
 - Reproduction scripts and the Editor-only Landscape import bridge are documented in `Tools/Terrain/README.md`. Preserve concept/source maps locally; commit only scripts, plugin source and documentation. Never overwrite an existing level or terrain assets as an incidental regeneration step.
 
+## Door interaction and interior travel
+
+- The review cottage in `L_VillageTerrain_01` uses `DoorEnter`/`DoorExit` interaction rows, synchronized push/pull clips and an inward hinge. G and mobile USE share server-validated selection; both doorway sides reserve the same `PortalId` while busy.
+- `L_CozyHouse01_Gray` is a cached cutaway sublevel at `(50000,0,0)`cm. Transfer only the participating pawn; do not replace the shared village with `OpenLevel` or add another PlayerStart to the sublevel. Startup/default maps remain unchanged.
+- `UTownAgeDoorAnimInstance` derives from the native single-node instance but is hosted with `SetAnimInstanceClass` in AnimationBlueprint mode. Use `GetAnimInstance()` and `SetAnimationAsset`; mesh `SetAnimation`/`SetAnimationMode` or `GetSingleNodeInstance()` would bypass its0.22s pose transition. Keep the existing locomotion sample smoothing unchanged.
+- Approved door clips have0.2s Idle endpoint easing, fixed root XY and the existing Skeleton/skin. Gameplay capsule motion is server-authoritative; normal movement/sprint/interaction is gated during traversal and restored afterward. Sources, setup and validation: `Tools/Doors/README.md`.
+
 ## 3D asset production pipeline — Meshy default
 
 - Use `$townage-meshy` for new character/prop generation and Meshy handoff. Its repository source is `Tools/Skills/townage-meshy/SKILL.md`; operational commands are in `Tools/Meshy/README.md`.

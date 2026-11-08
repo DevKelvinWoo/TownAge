@@ -14,7 +14,8 @@ DECLARE_LOG_CATEGORY_EXTERN(LogTownAgeInteraction, Log, All);
 UENUM(BlueprintType)
 enum class ETownAgeInteractionAction : uint8
 {
-    LogOnly
+    LogOnly,
+    DoorTransition
 };
 
 USTRUCT(BlueprintType)

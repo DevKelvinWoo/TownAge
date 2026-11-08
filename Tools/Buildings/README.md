@@ -2,7 +2,8 @@
 
 The approved Meshy cottage has an isolated `candidate_v002` with a static body,
 independent door mesh, and right-hand hinge. The door is closed at zero rotation.
-No animation, interaction, replication logic, or interior was added.
+That base delivery contains the mesh separation. Current interaction and animated
+travel extend its placement BP through `Tools/Interaction` and `Tools/Doors`.
 
 Local source: `ArtSource/Meshy/CozyHouse01/candidate_v002/CozyHouse01_Split.blend`.
 Unreal BP: `/Game/Characters/Meshy/CozyHouse01/candidate_v002/BP_CozyHouse01_Split`.
@@ -47,3 +48,7 @@ seal the doorway. This has not been profiled on mobile devices.
 Technical reports and screenshots are local under `Saved/Meshy/CozyHouse01`.
 Art direction and look-and-feel judgment remain with the user. Keep models,
 textures, map files, previews and task receipts out of commits.
+
+The runtime now uses the `candidate_v003` leaf with an inside handle, while
+retaining this base body and prior source deliveries. Refer to `Tools/Doors/README.md`
+for the native pose blend, synchronized hinge and streamed gray-room connection.
