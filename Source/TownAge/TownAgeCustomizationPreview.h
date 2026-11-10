@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "TownAgeCosmeticModules.h"
 #include "TownAgeCustomizationPreview.generated.h"
 
 UCLASS()
@@ -25,6 +26,7 @@ public:
     FVector GetPreviewViewTarget() const { return ViewTarget; }
     bool CanDyeHair() const;
     void ApplyHairColor(uint8 Index);
+    void ApplyMakeup(const FTownAgeMakeupState& State);
     bool IsPreviewReady() const;
     UFUNCTION(BlueprintPure, Category="TownAge|Customization")
     class USkeletalMeshComponent* GetPreviewMesh() const { return Mesh; }
@@ -38,6 +40,7 @@ protected:
     UPROPERTY(Transient) TObjectPtr<class UTextureRenderTarget2D> RenderTarget;
     int32 CapturedFrames = 0;
     bool bTexturesPrestreamed = false;
+    bool bMakeupTexturesPrestreamed = false;
     bool bInitialized = false;
     bool bFaceView = false;
     FVector FullBodyTarget = FVector::ZeroVector;

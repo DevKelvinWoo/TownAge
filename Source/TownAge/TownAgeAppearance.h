@@ -4,6 +4,7 @@
 
 class USkeletalMeshComponent;
 class UMaterialInterface;
+class UMeshComponent;
 
 namespace TownAgeAppearance
 {
@@ -14,4 +15,5 @@ namespace TownAgeAppearance
     TOWNAGE_API bool CanDyeHair(const USkeletalMeshComponent* Mesh);
     TOWNAGE_API bool IsMaskedHairMaterial(UMaterialInterface* Material);
     TOWNAGE_API bool ApplyHairColor(USkeletalMeshComponent* Mesh, uint8 Index);
+    TOWNAGE_API TArray<UMeshComponent*> GetAppearanceMeshes(const USkeletalMeshComponent* Mesh);
 }

@@ -30,7 +30,9 @@ bool UsesOriginalTownKeeperAtlas(const UMeshComponent* Mesh, UMaterialInterface*
         && Material && Material->GetPathName() == TEXT("/Game/Characters/Meshy/TownKeeper_Meshy/candidate_v001/M_TownKeeper_Meshy.M_TownKeeper_Meshy");
 }
 
-TArray<UMeshComponent*> AppearanceMeshes(const USkeletalMeshComponent* Root)
+}
+
+TArray<UMeshComponent*> TownAgeAppearance::GetAppearanceMeshes(const USkeletalMeshComponent* Root)
 {
     TArray<UMeshComponent*> Result;
     if (!IsValid(Root)) return Result;
@@ -40,7 +42,6 @@ TArray<UMeshComponent*> AppearanceMeshes(const USkeletalMeshComponent* Root)
     for (USceneComponent* Child : Children)
         if (auto* Part = Cast<UMeshComponent>(Child); Part && Part->IsVisible()) Result.Add(Part);
     return Result;
-}
 }
 
 bool TownAgeAppearance::IsValidHairColor(uint8 Index)
@@ -64,7 +65,7 @@ bool TownAgeAppearance::ApplyHairColor(USkeletalMeshComponent* Mesh, uint8 Index
 {
     if (!IsValid(Mesh) || !IsValidHairColor(Index)) return false;
     bool bApplied = false;
-    for (UMeshComponent* Part : AppearanceMeshes(Mesh))
+    for (UMeshComponent* Part : GetAppearanceMeshes(Mesh))
     {
         const TArray<FName> Slots = Part->GetMaterialSlotNames();
         for (int32 Slot = 0; Slot < Part->GetNumMaterials(); ++Slot)
@@ -100,7 +101,7 @@ bool TownAgeAppearance::IsMaskedHairMaterial(UMaterialInterface* Material)
 bool TownAgeAppearance::CanDyeHair(const USkeletalMeshComponent* Mesh)
 {
     if (!IsValid(Mesh)) return false;
-    for (UMeshComponent* Part : AppearanceMeshes(Mesh))
+    for (UMeshComponent* Part : GetAppearanceMeshes(Mesh))
     {
         const TArray<FName> Slots = Part->GetMaterialSlotNames();
         for (int32 Slot = 0; Slot < Part->GetNumMaterials(); ++Slot)

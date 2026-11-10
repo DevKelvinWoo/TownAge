@@ -1,10 +1,13 @@
-# Vanity hair customization
+# Modular character customization
 
 `VanityUse` opens a character customization panel through the existing
-server-validated G/mobile USE interaction. Its left column renders the approved
-looping Idle; its right column offers one Dye tab with red, blue, green and yellow
-chips. Selecting a chip applies the server-approved choice immediately. Close or
-Escape retains the selected color on the playable character.
+server-validated G/mobile USE interaction. Its left column renders the owner's
+looping Idle; its right column offers Dye, Surgery and Makeup categories. Dye
+uses a full-body camera and four test hair colors. Surgery and Makeup select the
+face camera automatically. Surgery is preview-only; Makeup provides six surface
+effects, palettes, strength sliders, Natural and Reset. Close/Escape retains
+server-approved appearance on the playable character. Art research and asset
+reproduction are in [MAKEUP.md](MAKEUP.md).
 
 ## Assets and reproduction
 
@@ -86,11 +89,11 @@ materials, can still use both camera views, and shows a dye-unavailable notice
 until its artist provides a compatible hair channel. Character spawning/model
 selection and its network replication remain the owning avatar system's job.
 
-Full body / Face are local preview camera choices. Face framing uses the
+Camera framing follows the selected cosmetic category. Face framing uses the
 avatar's Head socket (or bounds fallback), upper mesh bounds and forward depth,
 so a neck-root bone does not crop the forehead. The same render target and Idle
-continue during the smooth camera transition. Closing resets to Full body for
-the next session. No surgery or makeup controls are implemented yet.
+continue during the smooth camera transition. Reopening selects the first
+category allowed by that station. No surgery mutations are implemented yet.
 
 `create_owner_preview_fixture.py` creates a separate developer-only alternate
 mesh asset with the supported dye interface, reusing approved geometry. Run

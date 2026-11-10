@@ -247,6 +247,15 @@ bool ATownAgeCustomizationPreview::IsPreviewReady() const
     return bInitialized && CapturedFrames >= 8 && RenderTarget && Mesh && Mesh->GetSkeletalMeshAsset() && Mesh->GetAnimInstance();
 }
 
+void ATownAgeCustomizationPreview::ApplyMakeup(const FTownAgeMakeupState& State)
+{
+    if (UTownAgeMakeupModule::Apply(Mesh, State) && !bMakeupTexturesPrestreamed)
+    {
+        Mesh->PrestreamTextures(5.f, true);
+        bMakeupTexturesPrestreamed = true;
+    }
+}
+
 void ATownAgeCustomizationPreview::SetFaceView(bool bInFaceView)
 {
     bFaceView = bInFaceView;

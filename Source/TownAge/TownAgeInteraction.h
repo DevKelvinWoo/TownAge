@@ -96,6 +96,10 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, Category="Interaction")
     bool bInteractionEnabled = true;
+    // Station capabilities: Dye=1, Surgery=2, Makeup=4. Services are not tied to
+    // a vanity mesh; future salon/clinic targets can expose a subset.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Interaction", meta=(ClampMin="0", ClampMax="7"))
+    int32 AllowedCosmeticCategories = 7;
 
     UFUNCTION(BlueprintPure, Category="Interaction")
     FVector GetInteractionPoint() const;

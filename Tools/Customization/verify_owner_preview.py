@@ -70,7 +70,7 @@ def tick(delta):
             assert mesh.get_material(0) != live.get_material(0)
             assert custom.can_dye_hair()
             custom.choose_hair_color(3)
-            custom.set_face_view(True)
+            custom.set_category(unreal.TownAgeCosmeticCategory.SURGERY)
             stage(3, now)
         elif current == 3 and elapsed > .7:
             preview = custom.get_preview_actor()

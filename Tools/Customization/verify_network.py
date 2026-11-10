@@ -62,7 +62,8 @@ def tick(delta):
                 avatar = pawn.get_editor_property('mesh')
                 avatar.set_skeletal_mesh_asset(variant)
                 avatar.set_editor_property('relative_scale3d', unreal.Vector(.85, .85, 1.12))
-                avatar.set_material(0, unreal.load_asset('/Game/Characters/Customization/M_TownKeeper_HairDye'))
+                avatar.set_material(0, unreal.load_asset('/Game/Characters/Customization/M_TownKeeper_Makeup')
+                                   or unreal.load_asset('/Game/Characters/Customization/M_TownKeeper_HairDye'))
                 pawn.set_actor_location(vanity.get_actor_location() + unreal.Vector(0, 130, 90.15), False, True)
                 pawn.set_actor_rotation(unreal.Rotator(pitch=0, yaw=-90, roll=0), True)
             STATE['host_origin'] = host.get_actor_location()
@@ -100,7 +101,17 @@ def tick(delta):
             assert actual == expected
             assert host.get_customization_component().get_hair_color_index() == 0
             STATE['checks'].extend(['native_chip_reaches_server', 'live_hair_color_replicates', 'other_player_appearance_unchanged'])
-            ready('Click Close in remote customization window')
+            ready('Click 화장 then 자연스럽게 in remote customization window')
+            advance(6, now)
+        elif stage == 6 and sc.get_makeup_state().blush_amount == 30 and cc.get_makeup_state().blush_amount == 30:
+            assert sc.get_category() == cc.get_category() == unreal.TownAgeCosmeticCategory.MAKEUP
+            assert cc.get_preview_actor().is_face_view()
+            assert sc.get_makeup_state().iris_amount == cc.get_makeup_state().iris_amount == 35
+            assert host.get_customization_component().get_makeup_state().blush_amount == 0
+            assert sc.get_hair_color_index() == cc.get_hair_color_index() == 2
+            STATE['checks'].extend(['native_makeup_preset_replicates', 'category_drives_face_camera',
+                                    'makeup_keeps_dye_and_other_player_unchanged'])
+            ready('Click 닫기 in remote customization window')
             advance(4, now)
         elif stage == 4 and not sc.is_server_session_active() and not cc.is_customization_open():
             assert sc.get_hair_color_index() == cc.get_hair_color_index() == 2

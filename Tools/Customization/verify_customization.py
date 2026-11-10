@@ -93,7 +93,7 @@ def tick(delta):
                 STATE['checks'].extend(['separate_local_preview_level', 'looping_idle_pose_changes', 'live_pawn_stays_interior_and_frozen'])
                 STATE['full_distance'] = (preview.get_preview_camera_location() - preview.get_preview_view_target()).length()
                 STATE['full_target_z'] = preview.get_preview_view_target().z
-                custom.set_face_view(True)
+                custom.set_category(unreal.TownAgeCosmeticCategory.MAKEUP)
                 advance(30, now)
         elif stage == 30 and elapsed > .7:
             preview = custom.get_preview_actor()
@@ -102,7 +102,7 @@ def tick(delta):
             assert distance < STATE['full_distance'] * .65
             assert preview.get_preview_view_target().z > STATE['full_target_z'] + 10
             unreal.RenderingLibrary.export_render_target(world, preview.get_render_target(), str(OUT), 'preview_face.png')
-            custom.set_face_view(False)
+            custom.set_category(unreal.TownAgeCosmeticCategory.DYE)
             advance(31, now)
         elif stage == 31 and elapsed > .7:
             preview = custom.get_preview_actor()

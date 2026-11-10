@@ -45,18 +45,22 @@ bool UTownAgeCustomizationComponent::ServerBegin(UTownAgeInteractionTargetCompon
     const auto* Row = IsValid(Target) ? Target->GetDefinition() : nullptr;
     if (!Player || !Player->HasAuthority() || !Player->GetController() || IsCustomizationOpen()
         || Player->IsDoorBusy() || !Row || Row->Action != ETownAgeInteractionAction::OpenCustomization
+        || (Target->AllowedCosmeticCategories & 7) == 0
         || !Target->CanInteract(Player))
         return false;
     SessionTarget = Target;
     SessionController = Player->GetController();
     bServerSessionActive = true;
+    const uint8 Allowed = uint8(Target->AllowedCosmeticCategories & 7);
+    ServerCategory = (Allowed & 1) ? ETownAgeCosmeticCategory::Dye
+        : ((Allowed & 4) ? ETownAgeCosmeticCategory::Makeup : ETownAgeCosmeticCategory::Surgery);
     ++ServerSessionId;
     auto* Movement = Player->GetCharacterMovement();
     PreviousMovementMode = Movement->MovementMode;
     PreviousCustomMovementMode = Movement->CustomMovementMode;
     Movement->StopMovementImmediately();
     Movement->DisableMovement();
-    ClientBeginCustomization(ServerSessionId);
+    ClientBeginCustomization(ServerSessionId, Allowed);
     Player->ForceNetUpdate();
     UE_LOG(LogTownAgeCustomization, Log, TEXT("Customization opened: Player=%s Session=%u Target=%s"),
         *Player->GetName(), ServerSessionId, *Target->GetPathName());
@@ -73,7 +77,7 @@ bool UTownAgeCustomizationComponent::IsSessionTargetValid() const
         || !Target->bInteractionEnabled || Target->GetWorld() != GetWorld())
         return false;
     const auto* Row = Target->GetDefinition();
-    if (!Row || Row->Action != ETownAgeInteractionAction::OpenCustomization) return false;
+    if (!Row || Row->Action != ETownAgeInteractionAction::OpenCustomization || !IsCategoryAllowed(ServerCategory)) return false;
     TownAgeInteraction::FCandidateScore Score;
     const FVector Point = Target->GetInteractionPoint();
     const FVector Approach = Target->GetOwner()->GetActorTransform().TransformVectorNoScale(Target->LocalApproachDirection);
@@ -83,7 +87,8 @@ bool UTownAgeCustomizationComponent::IsSessionTargetValid() const
 
 void UTownAgeCustomizationComponent::ChooseHairColor(uint8 ColorIndex)
 {
-    if (!bLocalOpen || !bPreviewPresented || !PreviewActor || !CanDyeHair() || ColorIndex < 1 || ColorIndex > TownAgeAppearance::NumHairColors) return;
+    if (!bLocalOpen || !bPreviewPresented || !PreviewActor || LocalCategory != ETownAgeCosmeticCategory::Dye
+        || !(LocalAllowedCategories & 1) || !CanDyeHair() || !UTownAgeDyeModule::Validate(ColorIndex)) return;
     // Only an acknowledged server choice updates the displayed selection.
     ServerChooseHairColor(LocalSessionId, ColorIndex);
 }
@@ -96,7 +101,8 @@ void UTownAgeCustomizationComponent::ServerChooseHairColor_Implementation(uint32
         EndServerSession();
         return;
     }
-    if (!CanDyeHair() || ColorIndex < 1 || ColorIndex > TownAgeAppearance::NumHairColors) return;
+    if (ServerCategory != ETownAgeCosmeticCategory::Dye || !IsCategoryAllowed(ServerCategory)
+        || !CanDyeHair() || !UTownAgeDyeModule::Validate(ColorIndex)) return;
     HairColorIndex = ColorIndex;
     OnRep_HairColorIndex();
     GetOwner()->ForceNetUpdate();
@@ -108,7 +114,9 @@ void UTownAgeCustomizationComponent::ServerChooseHairColor_Implementation(uint32
 void UTownAgeCustomizationComponent::OnRep_HairColorIndex()
 {
     ApplyCharacterHairColor();
+    ApplyCharacterMakeup();
     if (PreviewActor) PreviewActor->ApplyHairColor(HairColorIndex);
+    if (PreviewActor) PreviewActor->ApplyMakeup(MakeupState);
     if (Widget) Widget->SetSelectedColor(HairColorIndex);
 }
 
@@ -120,7 +128,7 @@ void UTownAgeCustomizationComponent::ClientConfirmHairColor_Implementation(uint3
     OnRep_HairColorIndex();
 }
 
-void UTownAgeCustomizationComponent::ClientBeginCustomization_Implementation(uint32 SessionId)
+void UTownAgeCustomizationComponent::ClientBeginCustomization_Implementation(uint32 SessionId, uint8 AllowedCategories)
 {
     auto* Player = Cast<ATownAgePlayer>(GetOwner());
     auto* PC = Player ? Cast<ATownAgePlayerController>(Player->GetController()) : nullptr;
@@ -129,6 +137,10 @@ void UTownAgeCustomizationComponent::ClientBeginCustomization_Implementation(uin
     PC->CloseChat();
     LocalController = PC;
     LocalSessionId = SessionId;
+    LocalAllowedCategories = AllowedCategories & 7;
+    LocalCategory = (LocalAllowedCategories & 1) ? ETownAgeCosmeticCategory::Dye
+        : ((LocalAllowedCategories & 4) ? ETownAgeCosmeticCategory::Makeup : ETownAgeCosmeticCategory::Surgery);
+    bFaceViewRequested = LocalCategory != ETownAgeCosmeticCategory::Dye;
     bLocalOpen = true;
     bPreviousCursor = PC->bShowMouseCursor;
     PC->bShowMouseCursor = true;
@@ -142,11 +154,15 @@ void UTownAgeCustomizationComponent::ClientBeginCustomization_Implementation(uin
     }
     Widget->OnColorSelected.AddUObject(this, &ThisClass::ChooseHairColor);
     Widget->OnCloseRequested.AddUObject(this, &ThisClass::CloseCustomization);
-    Widget->OnViewChanged.AddUObject(this, &ThisClass::SetFaceView);
+    Widget->OnCategorySelected.AddUObject(this, &ThisClass::SetCategory);
+    Widget->OnMakeupChanged.AddUObject(this, &ThisClass::ChooseMakeup);
     Widget->AddToPlayerScreen(100);
     Widget->SetSelectedColor(HairColorIndex);
     Widget->SetReady(false);
-    Widget->SetFaceView(false);
+    Widget->SetAllowedCategories(LocalAllowedCategories);
+    Widget->SetCategory(LocalCategory);
+    Widget->SetMakeupState(MakeupState);
+    Widget->SetMakeupAvailable(CanApplyMakeup());
     Widget->SetDyeAvailable(CanDyeHair());
     FInputModeGameAndUI Mode;
     Mode.SetWidgetToFocus(Widget->TakeWidget());
@@ -192,6 +208,7 @@ void UTownAgeCustomizationComponent::UpdateLocalPreview()
                 return;
             }
             PreviewActor->ApplyHairColor(HairColorIndex);
+            PreviewActor->ApplyMakeup(MakeupState);
             PreviewActor->SetFaceView(bFaceViewRequested);
         }
     }
@@ -203,8 +220,10 @@ void UTownAgeCustomizationComponent::UpdateLocalPreview()
     }
     if (!PreviewActor->IsPreviewReady()) return;
     PreviewActor->ApplyHairColor(HairColorIndex);
+    PreviewActor->ApplyMakeup(MakeupState);
     Widget->SetPreviewTexture(PreviewActor->GetRenderTarget());
     Widget->SetDyeAvailable(PreviewActor->CanDyeHair());
+    Widget->SetMakeupAvailable(UTownAgeMakeupModule::SupportsMesh(PreviewActor->GetPreviewMesh()));
     Widget->SetReady(true);
     bPreviewPresented = true;
     UE_LOG(LogTownAgeCustomization, Log, TEXT("Customization preview ready: Player=%s Level=%s"),
@@ -256,7 +275,8 @@ void UTownAgeCustomizationComponent::CleanupLocalPreview()
     {
         Widget->OnColorSelected.RemoveAll(this);
         Widget->OnCloseRequested.RemoveAll(this);
-        Widget->OnViewChanged.RemoveAll(this);
+        Widget->OnCategorySelected.RemoveAll(this);
+        Widget->OnMakeupChanged.RemoveAll(this);
         Widget->RemoveFromParent();
         Widget = nullptr;
     }
@@ -287,14 +307,13 @@ void UTownAgeCustomizationComponent::SetFaceView(bool bFaceView)
     if (!bLocalOpen) return;
     bFaceViewRequested = bFaceView;
     if (PreviewActor) PreviewActor->SetFaceView(bFaceView);
-    if (Widget) Widget->SetFaceView(bFaceView);
 }
 
 bool UTownAgeCustomizationComponent::CanDyeHair() const
 {
     const auto* Player = Cast<ATownAgePlayer>(GetOwner());
     if (!Player) return false;
-    return TownAgeAppearance::CanDyeHair(Player->GetMesh());
+    return UTownAgeDyeModule::SupportsMesh(Player->GetMesh());
 }
 
 void UTownAgeCustomizationComponent::ApplyCharacterHairColor()
@@ -310,7 +329,94 @@ void UTownAgeCustomizationComponent::ApplyCharacterHairColor()
         if (!Existing || Existing->Parent != Override.Value)
             CharacterMesh->CreateDynamicMaterialInstance(Override.Key, Override.Value);
     }
-    TownAgeAppearance::ApplyHairColor(CharacterMesh, HairColorIndex);
+    UTownAgeDyeModule::Apply(CharacterMesh, HairColorIndex);
+}
+
+bool UTownAgeCustomizationComponent::IsCategoryAllowed(ETownAgeCosmeticCategory Category) const
+{
+    const uint8 Index = uint8(Category);
+    const auto* Target = SessionTarget.Get();
+    return Index <= uint8(ETownAgeCosmeticCategory::Makeup) && IsValid(Target)
+        && (Target->AllowedCosmeticCategories & (1 << Index)) != 0;
+}
+
+ETownAgeCosmeticCategory UTownAgeCustomizationComponent::GetCategory() const
+{
+    const AActor* OwnerActor = GetOwner();
+    return OwnerActor && OwnerActor->HasAuthority() && !bLocalOpen ? ServerCategory : LocalCategory;
+}
+
+void UTownAgeCustomizationComponent::SetCategory(ETownAgeCosmeticCategory Category)
+{
+    const uint8 Index = uint8(Category);
+    if (!bLocalOpen || Index > uint8(ETownAgeCosmeticCategory::Makeup)
+        || !(LocalAllowedCategories & (1 << Index))) return;
+    LocalCategory = Category;
+    SetFaceView(Category != ETownAgeCosmeticCategory::Dye);
+    if (Widget) Widget->SetCategory(Category);
+    ServerSelectCategory(LocalSessionId, Category);
+}
+
+void UTownAgeCustomizationComponent::ServerSelectCategory_Implementation(uint32 SessionId, ETownAgeCosmeticCategory Category)
+{
+    if (!bServerSessionActive || SessionId != ServerSessionId) return;
+    if (!IsSessionTargetValid())
+    {
+        EndServerSession();
+        return;
+    }
+    if (IsCategoryAllowed(Category)) ServerCategory = Category;
+}
+
+bool UTownAgeCustomizationComponent::CanApplyMakeup() const
+{
+    const auto* Player = Cast<ATownAgePlayer>(GetOwner());
+    return Player && UTownAgeMakeupModule::SupportsMesh(Player->GetMesh());
+}
+
+void UTownAgeCustomizationComponent::ChooseMakeup(const FTownAgeMakeupState& State)
+{
+    if (!bLocalOpen || !bPreviewPresented || LocalCategory != ETownAgeCosmeticCategory::Makeup
+        || !(LocalAllowedCategories & 4) || !CanApplyMakeup() || !UTownAgeMakeupModule::Validate(State)) return;
+    ServerChooseMakeup(LocalSessionId, State);
+}
+
+void UTownAgeCustomizationComponent::ServerChooseMakeup_Implementation(uint32 SessionId, FTownAgeMakeupState State)
+{
+    if (!bServerSessionActive || SessionId != ServerSessionId) return;
+    if (!IsSessionTargetValid())
+    {
+        EndServerSession();
+        return;
+    }
+    if (ServerCategory != ETownAgeCosmeticCategory::Makeup || !IsCategoryAllowed(ServerCategory)
+        || !CanApplyMakeup() || !UTownAgeMakeupModule::Validate(State)) return;
+    MakeupState = State;
+    OnRep_MakeupState();
+    GetOwner()->ForceNetUpdate();
+    ClientConfirmMakeup(SessionId, State);
+    UE_LOG(LogTownAgeCustomization, Log, TEXT("Makeup applied: Player=%s Session=%u Blush=%u Liner=%u Iris=%u Aegyo=%u Jaw=%u Nose=%u"),
+        *GetOwner()->GetName(), SessionId, State.BlushAmount, State.LinerAmount,
+        State.IrisAmount, State.AegyoAmount, State.JawAmount, State.NoseAmount);
+}
+
+void UTownAgeCustomizationComponent::ApplyCharacterMakeup()
+{
+    if (auto* Player = Cast<ATownAgePlayer>(GetOwner())) UTownAgeMakeupModule::Apply(Player->GetMesh(), MakeupState);
+}
+
+void UTownAgeCustomizationComponent::OnRep_MakeupState()
+{
+    ApplyCharacterMakeup();
+    if (PreviewActor) PreviewActor->ApplyMakeup(MakeupState);
+    if (Widget) Widget->SetMakeupState(MakeupState);
+}
+
+void UTownAgeCustomizationComponent::ClientConfirmMakeup_Implementation(uint32 SessionId, FTownAgeMakeupState State)
+{
+    if (!bLocalOpen || SessionId != LocalSessionId) return;
+    MakeupState = State;
+    OnRep_MakeupState();
 }
 
 void UTownAgeCustomizationComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* TickFunction)
@@ -330,5 +436,6 @@ void UTownAgeCustomizationComponent::GetLifetimeReplicatedProps(TArray<FLifetime
 {
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
     DOREPLIFETIME(UTownAgeCustomizationComponent, HairColorIndex);
+    DOREPLIFETIME(UTownAgeCustomizationComponent, MakeupState);
     DOREPLIFETIME_CONDITION(UTownAgeCustomizationComponent, bServerSessionActive, COND_OwnerOnly);
 }
