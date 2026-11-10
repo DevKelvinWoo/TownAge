@@ -116,7 +116,7 @@ void UTownAgeCustomizationComponent::OnRep_HairColorIndex()
     ApplyCharacterHairColor();
     ApplyCharacterMakeup();
     if (PreviewActor) PreviewActor->ApplyHairColor(HairColorIndex);
-    if (PreviewActor) PreviewActor->ApplyMakeup(MakeupState);
+    if (PreviewActor) PreviewActor->ApplyMakeup(bOriginalMakeupPreview ? FTownAgeMakeupState() : MakeupState);
     if (Widget) Widget->SetSelectedColor(HairColorIndex);
 }
 
@@ -156,6 +156,7 @@ void UTownAgeCustomizationComponent::ClientBeginCustomization_Implementation(uin
     Widget->OnCloseRequested.AddUObject(this, &ThisClass::CloseCustomization);
     Widget->OnCategorySelected.AddUObject(this, &ThisClass::SetCategory);
     Widget->OnMakeupChanged.AddUObject(this, &ThisClass::ChooseMakeup);
+    Widget->OnOriginalPreview.AddUObject(this, &ThisClass::PreviewOriginalMakeup);
     Widget->AddToPlayerScreen(100);
     Widget->SetSelectedColor(HairColorIndex);
     Widget->SetReady(false);
@@ -208,7 +209,7 @@ void UTownAgeCustomizationComponent::UpdateLocalPreview()
                 return;
             }
             PreviewActor->ApplyHairColor(HairColorIndex);
-            PreviewActor->ApplyMakeup(MakeupState);
+            PreviewActor->ApplyMakeup(bOriginalMakeupPreview ? FTownAgeMakeupState() : MakeupState);
             PreviewActor->SetFaceView(bFaceViewRequested);
         }
     }
@@ -220,7 +221,7 @@ void UTownAgeCustomizationComponent::UpdateLocalPreview()
     }
     if (!PreviewActor->IsPreviewReady()) return;
     PreviewActor->ApplyHairColor(HairColorIndex);
-    PreviewActor->ApplyMakeup(MakeupState);
+    PreviewActor->ApplyMakeup(bOriginalMakeupPreview ? FTownAgeMakeupState() : MakeupState);
     Widget->SetPreviewTexture(PreviewActor->GetRenderTarget());
     Widget->SetDyeAvailable(PreviewActor->CanDyeHair());
     Widget->SetMakeupAvailable(UTownAgeMakeupModule::SupportsMesh(PreviewActor->GetPreviewMesh()));
@@ -271,12 +272,14 @@ void UTownAgeCustomizationComponent::CleanupLocalPreview()
     bLocalOpen = false;
     bPreviewPresented = false;
     bFaceViewRequested = false;
+    bOriginalMakeupPreview = false;
     if (Widget)
     {
         Widget->OnColorSelected.RemoveAll(this);
         Widget->OnCloseRequested.RemoveAll(this);
         Widget->OnCategorySelected.RemoveAll(this);
         Widget->OnMakeupChanged.RemoveAll(this);
+        Widget->OnOriginalPreview.RemoveAll(this);
         Widget->RemoveFromParent();
         Widget = nullptr;
     }
@@ -351,6 +354,7 @@ void UTownAgeCustomizationComponent::SetCategory(ETownAgeCosmeticCategory Catego
     const uint8 Index = uint8(Category);
     if (!bLocalOpen || Index > uint8(ETownAgeCosmeticCategory::Makeup)
         || !(LocalAllowedCategories & (1 << Index))) return;
+    PreviewOriginalMakeup(false);
     LocalCategory = Category;
     SetFaceView(Category != ETownAgeCosmeticCategory::Dye);
     if (Widget) Widget->SetCategory(Category);
@@ -408,8 +412,16 @@ void UTownAgeCustomizationComponent::ApplyCharacterMakeup()
 void UTownAgeCustomizationComponent::OnRep_MakeupState()
 {
     ApplyCharacterMakeup();
-    if (PreviewActor) PreviewActor->ApplyMakeup(MakeupState);
+    if (PreviewActor) PreviewActor->ApplyMakeup(bOriginalMakeupPreview ? FTownAgeMakeupState() : MakeupState);
     if (Widget) Widget->SetMakeupState(MakeupState);
+}
+
+void UTownAgeCustomizationComponent::PreviewOriginalMakeup(bool bOriginal)
+{
+    if (bOriginal && (!bLocalOpen || !bPreviewPresented || !PreviewActor
+        || LocalCategory != ETownAgeCosmeticCategory::Makeup || !CanApplyMakeup())) return;
+    bOriginalMakeupPreview = bOriginal;
+    if (PreviewActor) PreviewActor->ApplyMakeup(bOriginal ? FTownAgeMakeupState() : MakeupState);
 }
 
 void UTownAgeCustomizationComponent::ClientConfirmMakeup_Implementation(uint32 SessionId, FTownAgeMakeupState State)

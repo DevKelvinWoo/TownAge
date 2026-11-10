@@ -61,6 +61,10 @@ public:
     UFUNCTION(BlueprintCallable, Category="TownAge|Customization")
     void ChooseMakeup(const FTownAgeMakeupState& State);
     UFUNCTION(BlueprintCallable, Category="TownAge|Customization")
+    void PreviewOriginalMakeup(bool bOriginal);
+    UFUNCTION(BlueprintPure, Category="TownAge|Customization")
+    bool IsOriginalMakeupPreview() const { return bOriginalMakeupPreview; }
+    UFUNCTION(BlueprintCallable, Category="TownAge|Customization")
     void ChooseHairColor(uint8 ColorIndex);
     UFUNCTION(BlueprintCallable, Category="TownAge|Customization")
     void CloseCustomization();
@@ -84,6 +88,7 @@ private:
     bool bLocalOpen = false;
     bool bPreviewPresented = false;
     bool bFaceViewRequested = false;
+    bool bOriginalMakeupPreview = false;
     bool bPreviousCursor = false;
     EMovementMode PreviousMovementMode = MOVE_Walking;
     uint8 PreviousCustomMovementMode = 0;

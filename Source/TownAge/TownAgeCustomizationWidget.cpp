@@ -164,15 +164,28 @@ void UTownAgeCustomizationWidget::NativeOnInitialized()
     auto* MakeupScroll = WidgetTree->ConstructWidget<UScrollBox>();
     MakeupScroll->SetConsumeMouseWheel(EConsumeMouseWheel::WhenScrollingPossible); CategoryPanels->AddChild(MakeupScroll);
     auto* MakeupContent = WidgetTree->ConstructWidget<UVerticalBox>(); MakeupScroll->AddChild(MakeupContent);
-    auto* MakeupActions = WidgetTree->ConstructWidget<UHorizontalBox>();
+    auto* MakeupActions = WidgetTree->ConstructWidget<UUniformGridPanel>();
+    MakeupActions->SetSlotPadding(FMargin(3));
     MakeupContent->AddChildToVerticalBox(MakeupActions)->SetPadding(FMargin(0, 0, 0, 12));
     auto* Natural = Button(NSLOCTEXT("TownAge", "NaturalMakeup", "자연스럽게"), FLinearColor(.27f, .37f, .24f));
+    auto* Strong = Button(NSLOCTEXT("TownAge", "StrongMakeupComparison", "강하게 비교"), FLinearColor(.35f, .26f, .19f));
+    auto* Original = Button(NSLOCTEXT("TownAge", "HoldOriginalMakeup", "원본 보기 (누르기)"), FLinearColor(.18f, .25f, .23f));
     auto* Reset = Button(NSLOCTEXT("TownAge", "ResetMakeup", "화장 초기화"), FLinearColor(.16f, .20f, .17f));
-    auto* NaturalSlot = MakeupActions->AddChildToHorizontalBox(Natural); NaturalSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill)); NaturalSlot->SetPadding(FMargin(0, 0, 4, 0));
-    MakeupActions->AddChildToHorizontalBox(Reset)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+    auto* NaturalActionSlot = MakeupActions->AddChildToUniformGrid(Natural, 0, 0);
+    auto* StrongActionSlot = MakeupActions->AddChildToUniformGrid(Strong, 0, 1);
+    auto* OriginalActionSlot = MakeupActions->AddChildToUniformGrid(Original, 1, 0);
+    auto* ResetActionSlot = MakeupActions->AddChildToUniformGrid(Reset, 1, 1);
+    for (UUniformGridSlot* ActionSlot : {NaturalActionSlot, StrongActionSlot, OriginalActionSlot, ResetActionSlot})
+    {
+        ActionSlot->SetHorizontalAlignment(HAlign_Fill);
+        ActionSlot->SetVerticalAlignment(VAlign_Fill);
+    }
     Natural->OnClicked.AddDynamic(this, &UTownAgeCustomizationWidget::NaturalMakeupClicked);
+    Strong->OnClicked.AddDynamic(this, &UTownAgeCustomizationWidget::StrongMakeupClicked);
+    Original->OnPressed.AddDynamic(this, &UTownAgeCustomizationWidget::OriginalPreviewPressed);
+    Original->OnReleased.AddDynamic(this, &UTownAgeCustomizationWidget::OriginalPreviewReleased);
     Reset->OnClicked.AddDynamic(this, &UTownAgeCustomizationWidget::ResetMakeupClicked);
-    MakeupControls.Add(Natural); MakeupControls.Add(Reset);
+    MakeupControls.Add(Natural); MakeupControls.Add(Strong); MakeupControls.Add(Original); MakeupControls.Add(Reset);
 
     auto Palette = [&](const TArray<FText>& Labels, const TArray<FLinearColor>& Colors, TArray<TObjectPtr<UButton>>& Buttons)
     {
@@ -247,10 +260,10 @@ void UTownAgeCustomizationWidget::NativeTick(const FGeometry& Geometry, float De
         const float Margin = FMath::Clamp(float(Geometry.GetLocalSize().Y) * .04f, 10.f, 32.f);
         Cast<UCanvasPanelSlot>(Panel->Slot)->SetOffsets(FMargin(Margin));
     }
-    if (bMakeupPending && !bSliderCaptured)
+    if (bMakeupPending)
     {
         MakeupPendingAge += DeltaTime;
-        if (MakeupPendingAge >= .12f) FlushMakeupChange();
+        if (MakeupPendingAge >= .1f) FlushMakeupChange();
     }
 }
 
@@ -326,7 +339,11 @@ void UTownAgeCustomizationWidget::SelectColor(uint8 Index)
     if (!bReady || !bDyeAvailable || !IsValid(PreviewTexture)) return;
     SetSelectedColor(Index); OnColorSelected.Broadcast(Index);
 }
-void UTownAgeCustomizationWidget::QueueMakeupChange() { bMakeupPending=true; MakeupPendingAge=0.f; }
+void UTownAgeCustomizationWidget::QueueMakeupChange()
+{
+    if (!bMakeupPending) MakeupPendingAge=0.f;
+    bMakeupPending=true;
+}
 void UTownAgeCustomizationWidget::FlushMakeupChange()
 {
     if (!bMakeupPending || !bReady || !bMakeupAvailable) return;
@@ -368,6 +385,19 @@ void UTownAgeCustomizationWidget::NaturalMakeupClicked()
     Natural.IrisColor=1; Natural.IrisAmount=35; Natural.AegyoAmount=30; Natural.JawAmount=20; Natural.NoseAmount=20;
     bMakeupPending=false; SetMakeupState(Natural); QueueMakeupChange(); FlushMakeupChange();
 }
+void UTownAgeCustomizationWidget::StrongMakeupClicked()
+{
+    if (!bReady || !bMakeupAvailable) return;
+    FTownAgeMakeupState Strong; Strong.BlushColor=2; Strong.IrisColor=3;
+    Strong.BlushAmount=Strong.LinerAmount=Strong.IrisAmount=Strong.AegyoAmount=Strong.JawAmount=Strong.NoseAmount=100;
+    bMakeupPending=false; SetMakeupState(Strong); QueueMakeupChange(); FlushMakeupChange();
+}
+void UTownAgeCustomizationWidget::OriginalPreviewPressed()
+{
+    if (bReady && bMakeupAvailable && Category==ETownAgeCosmeticCategory::Makeup)
+        OnOriginalPreview.Broadcast(true);
+}
+void UTownAgeCustomizationWidget::OriginalPreviewReleased() { OnOriginalPreview.Broadcast(false); }
 void UTownAgeCustomizationWidget::ResetMakeupClicked()
 {
     if (!bReady || !bMakeupAvailable) return;

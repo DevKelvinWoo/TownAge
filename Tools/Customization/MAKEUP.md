@@ -40,7 +40,43 @@ session, camera and replicated appearance; the widget only emits choices.
 Surgery=2 and Makeup=4. The current vanity grants7. A future salon can grant1,
 clinic2 or makeup station4, using the same action and UI without vanity logic.
 The authority checks the session, target, category and bounded state on every
-choice. Slider commits are grouped on release, with a short keyboard debounce.
+choice. Slider changes update during dragging at up to10Hz, and release flushes
+the final value. Acknowledgments do not overwrite an actively dragged value.
+
+## Visible strength and comparison
+
+The0–100 data range remains unchanged. The original implementation applied
+slider changes only after release and its shader gains were too conservative.
+A native blush drag30→100 reached both live/preview materials as0.3→1.0;
+frozen-pose pixel captures also proved all six effects rendered, but weakly.
+Repeated zero captures were identical, separating effect changes from Idle
+motion or lighting noise.
+
+Each shader blend now uses `soft*s + (strong-soft)*s^4`, then clamps the masked
+alpha to0–1. This preserves the Natural preset's low range while making the
+upper range deliberately stronger. Aegyo highlight uses a screen lift that
+always brightens. The liner has a softly widened connected edge, and contour
+masks exclude neck/scarf pixels.
+
+**강하게 비교** selects strengths100 with coral blush and blue-gray iris.
+Holding **원본 보기** displays zero additional layers only in the preview;
+the authoritative appearance and live pawn stay unchanged. Release restores the
+latest selected makeup. Category changes and close clear the comparison state.
+
+Run `verify_makeup_pixels.py` in an open standalone session for frozen-pose
+zero/100 captures, actual material values, hold/release isolation and category
+reset checks. Timestamped captures remain in
+`Saved/Customization/Makeup/SliderAudit`. These are comparisons of additional
+layers, so the original painted cheek color and lashes remain in the baseline.
+
+Native pixel audit after the fix: repeated zeros are identical. Mean0/100
+pixel change increased3.68x overall (changed pixels over4/255:24,499→50,036).
+Per-effect mean gains: blush2.82x, liner5.65x, iris2.22x, aegyo3.75x,
+jaw5.00x, nose4.86x. Holding Original matches zero exactly; releasing matches
+the selected100 image exactly while the live/state values stay100. Contour
+masks protect the lower neck/scarf and fill only safe unused UV gutters.
+Reports and the aligned native comparison are local in the timestamped
+`SliderAudit` run directories. Build/UHT and all14 TownAge tests pass.
 
 For another avatar, author its own combined hair/makeup material with the same
 parameter interface and its own masks. Do not assign a dye-only override to an

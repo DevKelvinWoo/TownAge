@@ -114,23 +114,39 @@ hair_alpha=multiply(hair,parameter('DyeStrength',0.),a_output='R')
 result=blend(base,hair_color,hair_alpha,a_output='RGB')
 
 
-def overlay(previous,mask,channel,amount_name,scale,target,target_output=''):
-    alpha=multiply(multiply(mask,parameter(amount_name,0.),a_output=channel),scalar(scale))
-    return blend(previous,target,alpha,b_output=target_output)
+def intensity(amount_name,soft_scale,strong_scale):
+    # Keep the natural lower range; reserve the upper slider range for clear
+    # before/after comparisons without expanding the network byte domain.
+    amount=parameter(amount_name,0.)
+    squared=multiply(amount,amount)
+    fourth=multiply(squared,squared)
+    return add(multiply(amount,scalar(soft_scale)),multiply(fourth,scalar(strong_scale-soft_scale)))
 
 
-result=overlay(result,mask_a,'R','BlushAmount',.32,tint('BlushTint',(.70,.24,.31)),'RGB')
-result=overlay(result,mask_a,'G','LinerAmount',.65,color((.008,.004,.003)))
+def overlay(previous,mask,channel,amount_name,soft_scale,strong_scale,target,target_output=''):
+    alpha=multiply(mask,intensity(amount_name,soft_scale,strong_scale),a_output=channel)
+    saturated=node(unreal.MaterialExpressionSaturate)
+    link(alpha,'',saturated,'')
+    return blend(previous,target,saturated,b_output=target_output)
+
+
+result=overlay(result,mask_a,'R','BlushAmount',.32,.90,tint('BlushTint',(.70,.24,.31)),'RGB')
+result=overlay(result,mask_a,'G','LinerAmount',.65,1.,color((.008,.004,.003)))
 iris_light=node(unreal.MaterialExpressionClamp)
 iris_light.set_editor_property('min_default',.2)
 iris_light.set_editor_property('max_default',.85)
 link(add(multiply(luma,scalar(2.8)),scalar(.18)),'',iris_light,'')
 iris_color=multiply(iris_light,tint('IrisTint',(.30,.19,.065)),b_output='RGB')
-result=overlay(result,mask_a,'B','IrisAmount',.85,iris_color)
-result=overlay(result,mask_a,'A','AegyoAmount',.18,color((.93,.78,.60)))
-result=overlay(result,mask_b,'R','AegyoAmount',.08,color((.33,.23,.20)))
-result=overlay(result,mask_b,'G','JawAmount',.20,color((.34,.25,.22)))
-result=overlay(result,mask_b,'B','NoseAmount',.18,color((.34,.25,.22)))
+result=overlay(result,mask_a,'B','IrisAmount',.85,1.60,iris_color)
+# Screen-style lift always brightens the current skin instead of occasionally
+# darkening it with a fixed beige target on an already bright cheek.
+inverse=node(unreal.MaterialExpressionOneMinus)
+link(result,'',inverse,'')
+aegyo_lift=add(result,multiply(inverse,color((.85,.70,.50))))
+result=overlay(result,mask_a,'A','AegyoAmount',.18,.45,aegyo_lift)
+result=overlay(result,mask_b,'R','AegyoAmount',.08,.35,color((.33,.23,.20)))
+result=overlay(result,mask_b,'G','JawAmount',.20,1.80,color((.34,.25,.22)))
+result=overlay(result,mask_b,'B','NoseAmount',.18,.75,color((.34,.25,.22)))
 assert edit.connect_material_property(result,'',unreal.MaterialProperty.MP_BASE_COLOR)
 assert edit.connect_material_property(normal,'RGB',unreal.MaterialProperty.MP_NORMAL)
 assert edit.connect_material_property(rough,'R',unreal.MaterialProperty.MP_ROUGHNESS)
@@ -141,6 +157,9 @@ report={'material':material.get_path_name(),'textures':[t.get_path_name() for t 
         'source_mesh_modified':False,'source_material_modified':False,'backup':str(BACKUP),
         'parameters':['HairTint','DyeStrength','BlushTint','BlushAmount','LinerAmount','IrisTint',
                       'IrisAmount','AegyoAmount','JawAmount','NoseAmount'],
+        'intensity_mapping':'soft*s + (strong-soft)*s^4; masked alpha saturated',
+        'strong_scales':{'blush':.90,'liner':1.,'iris':1.60,'aegyo_highlight':.45,
+                         'aegyo_shadow':.35,'jaw':1.80,'nose':.75},
         'mask_channels':{'A':['blush','upper_liner','iris','aegyo_highlight'],
                          'B':['aegyo_shadow','jaw','nose','skin']}}
 (OUT/'material_setup_report.json').write_text(json.dumps(report,indent=2),encoding='utf8')

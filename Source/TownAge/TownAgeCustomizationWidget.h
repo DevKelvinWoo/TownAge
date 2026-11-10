@@ -10,6 +10,7 @@ class UTextureRenderTarget2D;
 DECLARE_MULTICAST_DELEGATE_OneParam(FTownAgeColorSelected, uint8);
 DECLARE_MULTICAST_DELEGATE_OneParam(FTownAgeCategorySelected, ETownAgeCosmeticCategory);
 DECLARE_MULTICAST_DELEGATE_OneParam(FTownAgeMakeupChanged, const FTownAgeMakeupState&);
+DECLARE_MULTICAST_DELEGATE_OneParam(FTownAgeOriginalPreviewChanged, bool);
 DECLARE_MULTICAST_DELEGATE(FTownAgeCustomizationClosed);
 
 UCLASS()
@@ -28,6 +29,7 @@ public:
     FTownAgeColorSelected OnColorSelected;
     FTownAgeCategorySelected OnCategorySelected;
     FTownAgeMakeupChanged OnMakeupChanged;
+    FTownAgeOriginalPreviewChanged OnOriginalPreview;
     FTownAgeCustomizationClosed OnCloseRequested;
 protected:
     virtual void NativeOnInitialized() override;
@@ -60,6 +62,9 @@ private:
     UFUNCTION() void LavenderClicked();
     UFUNCTION() void ResetMakeupClicked();
     UFUNCTION() void NaturalMakeupClicked();
+    UFUNCTION() void StrongMakeupClicked();
+    UFUNCTION() void OriginalPreviewPressed();
+    UFUNCTION() void OriginalPreviewReleased();
     UFUNCTION() void BlushChanged(float Value);
     UFUNCTION() void LinerChanged(float Value);
     UFUNCTION() void IrisChanged(float Value);
