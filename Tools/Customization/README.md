@@ -50,6 +50,13 @@ smearing at low frame rates. Eight capture frames warm up the preview before
 enabling the chips. The camera faces the character independently
 of the gameplay camera. See [Epic SceneCapture2D API](https://dev.epicgames.com/documentation/unreal-engine/API/Runtime/Engine/USceneCaptureComponent2D).
 
+Until the render target is assigned and preview readiness is confirmed, the
+portrait is hidden behind an opaque loading panel with a localized opening
+message and three-dot indicator. An empty image brush explicitly draws nothing,
+preventing the white placeholder flash. Color chips remain disabled during
+loading; Close/Escape remain available. This adds only a lightweight UMG overlay
+and does not keep the preview level/capture resident after closing.
+
 Closing, pawn EndPlay, invalid/destroyed targets and loading failure clean up the
 widget, capture actor and preview streaming instance. Session IDs prevent old
 close/choice messages from acting on a reopened session. Gameplay interaction,
@@ -59,6 +66,49 @@ updates so held input cannot become a fresh press after closing.
 Appearance replicates to other clients, including a newly relevant pawn. The
 selection currently belongs to this pawn's lifetime. Account saves, persistence
 across game restarts and respawn migration are outside this prototype.
+
+## Owner avatars and preview views
+
+The preview is initialized from the participating pawn's actual mesh, rather
+than a hardcoded TownKeeper mesh. It copies mesh identity, current scale, morph
+values, material values and visible skeletal/static attachments. Preview MIDs
+are independent of the live player and other players. A compatible zero-speed
+Blend Space sample is reused for Idle; avatars with another animation setup can
+author `PreviewIdleAnimation` on their customization component. A foreign
+TownKeeper animation is never forced onto an unrelated skeleton.
+
+Each avatar may author `HairDyeMaterials` (material slot -> masked material),
+using `HairTint` and `DyeStrength`. A dedicated slot whose name contains `Hair`
+may instead provide `HairTint` or `HairColor`. The shared helper checks attached
+skeletal/static hair too. Only the exact original TownKeeper mesh/material gets
+the existing TownKeeper atlas conversion. An unprepared model keeps its own
+materials, can still use both camera views, and shows a dye-unavailable notice
+until its artist provides a compatible hair channel. Character spawning/model
+selection and its network replication remain the owning avatar system's job.
+
+Full body / Face are local preview camera choices. Face framing uses the
+avatar's Head socket (or bounds fallback), upper mesh bounds and forward depth,
+so a neck-root bone does not crop the forehead. The same render target and Idle
+continue during the smooth camera transition. Closing resets to Full body for
+the next session. No surgery or makeup controls are implemented yet.
+
+`create_owner_preview_fixture.py` creates a separate developer-only alternate
+mesh asset with the supported dye interface, reusing approved geometry. Run
+`verify_owner_preview.py` after the normal standalone verifier to check alternate
+mesh identity/scale, dye/zoom, unrelated-skeleton material safety, and restoration
+of the original avatar. The developer fixture is outside always-cook folders.
+The two-player `verify_network.py` now uses that alternate mesh for the remote
+player and checks its preview against its own mesh, with the host left unchanged.
+
+Owner/view revision verified: build/UHT and 13 automation tests; initial loading
+mask with disabled chips followed by a visible ready portrait; owner mesh and
+independent MID identity; full-body/face camera round trip; all four dyes;
+alternate owner asset/scale, an unrelated skeleton without a foreign atlas,
+and restoration of the original avatar. Native two-player G, Face and Blue
+clicks verified a different remote avatar while the host stayed unchanged.
+The original 1-player PC PIE settings were restored. Reports stay local in
+`Saved/Customization`; new avatar art/rig authoring and physical mobile device
+validation remain separate work.
 
 ## Verification
 

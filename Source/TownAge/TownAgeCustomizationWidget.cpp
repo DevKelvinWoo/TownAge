@@ -9,11 +9,14 @@
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
 #include "Components/Image.h"
+#include "Components/Overlay.h"
+#include "Components/OverlaySlot.h"
 #include "Components/SafeZone.h"
 #include "Components/ScaleBox.h"
 #include "Components/SizeBox.h"
 #include "Components/SizeBoxSlot.h"
 #include "Components/TextBlock.h"
+#include "Components/Throbber.h"
 #include "Components/UniformGridPanel.h"
 #include "Components/UniformGridSlot.h"
 #include "Components/VerticalBox.h"
@@ -72,6 +75,26 @@ void UTownAgeCustomizationWidget::NativeOnInitialized()
     Portrait->AddChild(PortraitContent);
     auto* PreviewTitle = Text(TEXT("YOUR CHARACTER"), 15, FLinearColor(.66f, .75f, .65f));
     PortraitContent->AddChildToVerticalBox(PreviewTitle)->SetPadding(FMargin(14, 10));
+    auto* Views = WidgetTree->ConstructWidget<UHorizontalBox>();
+    PortraitContent->AddChildToVerticalBox(Views)->SetPadding(FMargin(10, 0, 10, 8));
+    for (const TCHAR* LabelText : {TEXT("Full body"), TEXT("Face")})
+    {
+        auto* ViewButton = WidgetTree->ConstructWidget<UButton>();
+        auto* ViewSize = WidgetTree->ConstructWidget<USizeBox>();
+        ViewSize->SetMinDesiredWidth(112);
+        ViewSize->SetMinDesiredHeight(48);
+        auto* Label = Text(LabelText, 15);
+        Label->SetJustification(ETextJustify::Center);
+        Cast<USizeBoxSlot>(ViewSize->AddChild(Label))->SetVerticalAlignment(VAlign_Center);
+        ViewButton->AddChild(ViewSize);
+        auto* ViewSlot = Views->AddChildToHorizontalBox(ViewButton);
+        ViewSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+        ViewSlot->SetPadding(FMargin(4, 0));
+        ViewButtons.Add(ViewButton);
+        ViewSizes.Add(ViewSize);
+    }
+    ViewButtons[0]->OnClicked.AddDynamic(this, &UTownAgeCustomizationWidget::FullBodyClicked);
+    ViewButtons[1]->OnClicked.AddDynamic(this, &UTownAgeCustomizationWidget::FaceClicked);
     auto* Scale = WidgetTree->ConstructWidget<UScaleBox>();
     Scale->SetStretch(EStretch::ScaleToFit);
     auto* ImageSlot = PortraitContent->AddChildToVerticalBox(Scale);
@@ -79,9 +102,31 @@ void UTownAgeCustomizationWidget::NativeOnInitialized()
     auto* ImageSize = WidgetTree->ConstructWidget<USizeBox>();
     ImageSize->SetWidthOverride(768); ImageSize->SetHeightOverride(1024);
     Scale->AddChild(ImageSize);
+    auto* PreviewLayers = WidgetTree->ConstructWidget<UOverlay>();
+    ImageSize->AddChild(PreviewLayers);
     PreviewImage = WidgetTree->ConstructWidget<UImage>();
-    PreviewImage->SetVisibility(ESlateVisibility::HitTestInvisible);
-    ImageSize->AddChild(PreviewImage);
+    PreviewImage->SetVisibility(ESlateVisibility::Hidden);
+    auto* PreviewSlot = PreviewLayers->AddChildToOverlay(PreviewImage);
+    PreviewSlot->SetHorizontalAlignment(HAlign_Fill);
+    PreviewSlot->SetVerticalAlignment(VAlign_Fill);
+    LoadingPanel = WidgetTree->ConstructWidget<UBorder>();
+    LoadingPanel->SetBrushColor(FLinearColor(.08f, .105f, .09f, 1.f));
+    LoadingPanel->SetHorizontalAlignment(HAlign_Center);
+    LoadingPanel->SetVerticalAlignment(VAlign_Center);
+    auto* LoadingSlot = PreviewLayers->AddChildToOverlay(LoadingPanel);
+    LoadingSlot->SetHorizontalAlignment(HAlign_Fill);
+    LoadingSlot->SetVerticalAlignment(VAlign_Fill);
+    auto* LoadingContent = WidgetTree->ConstructWidget<UVerticalBox>();
+    LoadingPanel->AddChild(LoadingContent);
+    auto* LoadingLabel = Text(TEXT(""), 28);
+    LoadingLabel->SetText(NSLOCTEXT("TownAge", "VanityOpening", "화장대 여는 중…"));
+    LoadingLabel->SetJustification(ETextJustify::Center);
+    LoadingContent->AddChildToVerticalBox(LoadingLabel)->SetPadding(FMargin(16, 8));
+    auto* LoadingDots = WidgetTree->ConstructWidget<UThrobber>();
+    LoadingDots->SetNumberOfPieces(3);
+    auto* DotsSlot = LoadingContent->AddChildToVerticalBox(LoadingDots);
+    DotsSlot->SetHorizontalAlignment(HAlign_Center);
+    DotsSlot->SetPadding(FMargin(16));
 
     auto* Options = WidgetTree->ConstructWidget<UBorder>();
     Options->SetPadding(FMargin(24));
@@ -141,8 +186,8 @@ void UTownAgeCustomizationWidget::NativeOnInitialized()
     Status = Text(TEXT("Loading character..."), 14, FLinearColor(.68f, .75f, .67f));
     Content->AddChildToVerticalBox(Status)->SetPadding(FMargin(4, 20, 4, 0));
     SetPreviewTexture(PreviewTexture);
-    SetReady(bReady);
     SetSelectedColor(SelectedColor);
+    SetFaceView(bFaceView);
 }
 
 void UTownAgeCustomizationWidget::NativeTick(const FGeometry& Geometry, float DeltaTime)
@@ -151,6 +196,7 @@ void UTownAgeCustomizationWidget::NativeTick(const FGeometry& Geometry, float De
     const float ViewportScale = FMath::Max(.1f, UWidgetLayoutLibrary::GetViewportScale(this));
     const float TouchTarget = FMath::Max(56.f, 48.f / ViewportScale);
     for (const auto& Size : ChipSizes) Size->SetMinDesiredHeight(FMath::Max(76.f, TouchTarget));
+    for (const auto& Size : ViewSizes) Size->SetMinDesiredHeight(FMath::Max(48.f, TouchTarget));
     if (CloseSize) CloseSize->SetMinDesiredHeight(FMath::Max(48.f, TouchTarget));
     if (Panel)
     {
@@ -166,8 +212,10 @@ void UTownAgeCustomizationWidget::SetPreviewTexture(UTextureRenderTarget2D* Text
     FSlateBrush Brush;
     Brush.SetResourceObject(Texture);
     Brush.ImageSize = FVector2D(768, 1024);
-    Brush.DrawAs = ESlateBrushDrawType::Image;
+    // An image brush with no resource draws a white quad by default.
+    Brush.DrawAs = Texture ? ESlateBrushDrawType::Image : ESlateBrushDrawType::NoDrawType;
     PreviewImage->SetBrush(Brush);
+    SetReady(bReady);
 }
 
 void UTownAgeCustomizationWidget::SetSelectedColor(uint8 Index)
@@ -183,14 +231,34 @@ void UTownAgeCustomizationWidget::SetSelectedColor(uint8 Index)
 void UTownAgeCustomizationWidget::SetReady(bool bInReady)
 {
     bReady = bInReady;
-    for (const auto& Chip : Chips) Chip->SetIsEnabled(bReady);
-    if (Status) Status->SetText(FText::FromString(bReady
-        ? TEXT("Changes are applied to your character.") : TEXT("Loading character...")));
+    const bool bShowPreview = bReady && IsValid(PreviewTexture);
+    if (PreviewImage) PreviewImage->SetVisibility(bShowPreview ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+    if (LoadingPanel) LoadingPanel->SetVisibility(bShowPreview ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
+    for (const auto& Button : ViewButtons) Button->SetIsEnabled(bShowPreview);
+    for (const auto& Chip : Chips) Chip->SetIsEnabled(bShowPreview && bDyeAvailable);
+    if (Status) Status->SetText(FText::FromString(bShowPreview
+        ? (bDyeAvailable ? TEXT("Changes are applied to your character.")
+                         : TEXT("Hair dye is not available for this character yet."))
+        : TEXT("Loading character...")));
+}
+
+void UTownAgeCustomizationWidget::SetFaceView(bool bInFaceView)
+{
+    bFaceView = bInFaceView;
+    for (int32 Index = 0; Index < ViewButtons.Num(); ++Index)
+        ViewButtons[Index]->SetBackgroundColor((Index == 1) == bFaceView
+            ? FLinearColor(.28f, .42f, .27f) : FLinearColor(.11f, .16f, .13f));
+}
+
+void UTownAgeCustomizationWidget::SetDyeAvailable(bool bInAvailable)
+{
+    bDyeAvailable = bInAvailable;
+    SetReady(bReady);
 }
 
 void UTownAgeCustomizationWidget::SelectColor(uint8 Index)
 {
-    if (!bReady) return;
+    if (!bReady || !bDyeAvailable || !IsValid(PreviewTexture)) return;
     SetSelectedColor(Index);
     OnColorSelected.Broadcast(Index);
 }
@@ -200,6 +268,18 @@ void UTownAgeCustomizationWidget::BlueClicked() { SelectColor(2); }
 void UTownAgeCustomizationWidget::GreenClicked() { SelectColor(3); }
 void UTownAgeCustomizationWidget::YellowClicked() { SelectColor(4); }
 void UTownAgeCustomizationWidget::CloseClicked() { OnCloseRequested.Broadcast(); }
+void UTownAgeCustomizationWidget::FullBodyClicked()
+{
+    if (!bReady || !IsValid(PreviewTexture)) return;
+    SetFaceView(false);
+    OnViewChanged.Broadcast(false);
+}
+void UTownAgeCustomizationWidget::FaceClicked()
+{
+    if (!bReady || !IsValid(PreviewTexture)) return;
+    SetFaceView(true);
+    OnViewChanged.Broadcast(true);
+}
 
 FReply UTownAgeCustomizationWidget::NativeOnPreviewKeyDown(const FGeometry& Geometry, const FKeyEvent& Event)
 {

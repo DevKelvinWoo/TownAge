@@ -56,7 +56,13 @@ def tick(delta):
         if stage == 0 and elapsed > 1:
             vanity = next(a for a in unreal.GameplayStatics.get_all_actors_of_class(server, unreal.Actor)
                           if a.get_actor_label() == 'GrayRoom_Vanity')
+            variant = unreal.load_asset('/Game/Developers/CustomizationTests/SK_OwnerPreviewVariant')
+            assert variant, 'Run create_owner_preview_fixture.py before the network test'
             for pawn in (sp, cp):
+                avatar = pawn.get_editor_property('mesh')
+                avatar.set_skeletal_mesh_asset(variant)
+                avatar.set_editor_property('relative_scale3d', unreal.Vector(.85, .85, 1.12))
+                avatar.set_material(0, unreal.load_asset('/Game/Characters/Customization/M_TownKeeper_HairDye'))
                 pawn.set_actor_location(vanity.get_actor_location() + unreal.Vector(0, 130, 90.15), False, True)
                 pawn.set_actor_rotation(unreal.Rotator(pitch=0, yaw=-90, roll=0), True)
             STATE['host_origin'] = host.get_actor_location()
@@ -74,13 +80,18 @@ def tick(delta):
             advance(2, now)
         elif stage == 2 and sc.is_server_session_active() and cc.is_preview_ready():
             assert cc.is_customization_open()
+            source_mesh = cp.get_editor_property('mesh')
+            preview_mesh = cc.get_preview_actor().get_preview_mesh()
+            assert preview_mesh.get_editor_property('skeletal_mesh_asset') == source_mesh.get_editor_property('skeletal_mesh_asset')
+            assert preview_mesh.get_editor_property('skeletal_mesh_asset') != host.get_editor_property('mesh').get_editor_property('skeletal_mesh_asset')
+            assert (preview_mesh.get_editor_property('relative_scale3d') - source_mesh.get_editor_property('relative_scale3d')).length() < .001
             assert not unreal.GameplayStatics.get_all_actors_of_class(server, unreal.TownAgeCustomizationPreview)
             assert len(unreal.GameplayStatics.get_all_actors_of_class(client, unreal.TownAgeCustomizationPreview)) == 1
             assert (host.get_actor_location() - STATE['host_origin']).length() < 2
             assert host.get_actor_location().x < 10000
             assert host.get_customization_component().get_hair_color_index() == 0
             STATE['checks'].extend(['native_remote_G_opens_authority_session',
-                'preview_exists_only_in_participating_client', 'other_player_stays_village'])
+                'preview_exists_only_in_participating_client', 'other_player_stays_village', 'different_players_use_their_own_mesh_and_scale'])
             ready('Click BLUE in remote customization window')
             advance(3, now)
         elif stage == 3 and sc.get_hair_color_index() == 2 and cc.get_hair_color_index() == 2:

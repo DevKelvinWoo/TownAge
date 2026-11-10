@@ -10,6 +10,8 @@
 #include "Engine/Level.h"
 #include "Engine/World.h"
 #include "Net/UnrealNetwork.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
 
 DEFINE_LOG_CATEGORY(LogTownAgeCustomization);
 
@@ -81,7 +83,7 @@ bool UTownAgeCustomizationComponent::IsSessionTargetValid() const
 
 void UTownAgeCustomizationComponent::ChooseHairColor(uint8 ColorIndex)
 {
-    if (!bLocalOpen || !bPreviewPresented || !PreviewActor || ColorIndex < 1 || ColorIndex > TownAgeAppearance::NumHairColors) return;
+    if (!bLocalOpen || !bPreviewPresented || !PreviewActor || !CanDyeHair() || ColorIndex < 1 || ColorIndex > TownAgeAppearance::NumHairColors) return;
     // Only an acknowledged server choice updates the displayed selection.
     ServerChooseHairColor(LocalSessionId, ColorIndex);
 }
@@ -94,7 +96,7 @@ void UTownAgeCustomizationComponent::ServerChooseHairColor_Implementation(uint32
         EndServerSession();
         return;
     }
-    if (ColorIndex < 1 || ColorIndex > TownAgeAppearance::NumHairColors) return;
+    if (!CanDyeHair() || ColorIndex < 1 || ColorIndex > TownAgeAppearance::NumHairColors) return;
     HairColorIndex = ColorIndex;
     OnRep_HairColorIndex();
     GetOwner()->ForceNetUpdate();
@@ -105,8 +107,7 @@ void UTownAgeCustomizationComponent::ServerChooseHairColor_Implementation(uint32
 
 void UTownAgeCustomizationComponent::OnRep_HairColorIndex()
 {
-    if (auto* Player = Cast<ATownAgePlayer>(GetOwner()))
-        TownAgeAppearance::ApplyHairColor(Player->GetMesh(), HairColorIndex);
+    ApplyCharacterHairColor();
     if (PreviewActor) PreviewActor->ApplyHairColor(HairColorIndex);
     if (Widget) Widget->SetSelectedColor(HairColorIndex);
 }
@@ -141,9 +142,12 @@ void UTownAgeCustomizationComponent::ClientBeginCustomization_Implementation(uin
     }
     Widget->OnColorSelected.AddUObject(this, &ThisClass::ChooseHairColor);
     Widget->OnCloseRequested.AddUObject(this, &ThisClass::CloseCustomization);
+    Widget->OnViewChanged.AddUObject(this, &ThisClass::SetFaceView);
     Widget->AddToPlayerScreen(100);
     Widget->SetSelectedColor(HairColorIndex);
     Widget->SetReady(false);
+    Widget->SetFaceView(false);
+    Widget->SetDyeAvailable(CanDyeHair());
     FInputModeGameAndUI Mode;
     Mode.SetWidgetToFocus(Widget->TakeWidget());
     Mode.SetHideCursorDuringCapture(false);
@@ -179,7 +183,17 @@ void UTownAgeCustomizationComponent::UpdateLocalPreview()
         Parameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
         PreviewActor = GetWorld()->SpawnActor<ATownAgeCustomizationPreview>(
             ATownAgeCustomizationPreview::StaticClass(), PreviewOrigin, FRotator::ZeroRotator, Parameters);
-        if (PreviewActor) PreviewActor->ApplyHairColor(HairColorIndex);
+        if (PreviewActor)
+        {
+            auto* Player = Cast<ATownAgePlayer>(GetOwner());
+            if (!Player || !PreviewActor->InitializeFromCharacter(Player->GetMesh(), PreviewIdleAnimation.LoadSynchronous()))
+            {
+                CloseCustomization();
+                return;
+            }
+            PreviewActor->ApplyHairColor(HairColorIndex);
+            PreviewActor->SetFaceView(bFaceViewRequested);
+        }
     }
     if (!PreviewActor)
     {
@@ -190,6 +204,7 @@ void UTownAgeCustomizationComponent::UpdateLocalPreview()
     if (!PreviewActor->IsPreviewReady()) return;
     PreviewActor->ApplyHairColor(HairColorIndex);
     Widget->SetPreviewTexture(PreviewActor->GetRenderTarget());
+    Widget->SetDyeAvailable(PreviewActor->CanDyeHair());
     Widget->SetReady(true);
     bPreviewPresented = true;
     UE_LOG(LogTownAgeCustomization, Log, TEXT("Customization preview ready: Player=%s Level=%s"),
@@ -236,10 +251,12 @@ void UTownAgeCustomizationComponent::CleanupLocalPreview()
     const bool bWasOpen = bLocalOpen;
     bLocalOpen = false;
     bPreviewPresented = false;
+    bFaceViewRequested = false;
     if (Widget)
     {
         Widget->OnColorSelected.RemoveAll(this);
         Widget->OnCloseRequested.RemoveAll(this);
+        Widget->OnViewChanged.RemoveAll(this);
         Widget->RemoveFromParent();
         Widget = nullptr;
     }
@@ -263,6 +280,37 @@ void UTownAgeCustomizationComponent::CleanupLocalPreview()
         PC->FlushPressedKeys();
     }
     LocalController.Reset();
+}
+
+void UTownAgeCustomizationComponent::SetFaceView(bool bFaceView)
+{
+    if (!bLocalOpen) return;
+    bFaceViewRequested = bFaceView;
+    if (PreviewActor) PreviewActor->SetFaceView(bFaceView);
+    if (Widget) Widget->SetFaceView(bFaceView);
+}
+
+bool UTownAgeCustomizationComponent::CanDyeHair() const
+{
+    const auto* Player = Cast<ATownAgePlayer>(GetOwner());
+    if (!Player) return false;
+    return TownAgeAppearance::CanDyeHair(Player->GetMesh());
+}
+
+void UTownAgeCustomizationComponent::ApplyCharacterHairColor()
+{
+    auto* Player = Cast<ATownAgePlayer>(GetOwner());
+    if (!Player) return;
+    auto* CharacterMesh = Player->GetMesh();
+    for (const auto& Override : HairDyeMaterials)
+    {
+        if (Override.Key < 0 || Override.Key >= CharacterMesh->GetNumMaterials()
+            || !TownAgeAppearance::IsMaskedHairMaterial(Override.Value)) continue;
+        auto* Existing = Cast<UMaterialInstanceDynamic>(CharacterMesh->GetMaterial(Override.Key));
+        if (!Existing || Existing->Parent != Override.Value)
+            CharacterMesh->CreateDynamicMaterialInstance(Override.Key, Override.Value);
+    }
+    TownAgeAppearance::ApplyHairColor(CharacterMesh, HairColorIndex);
 }
 
 void UTownAgeCustomizationComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* TickFunction)

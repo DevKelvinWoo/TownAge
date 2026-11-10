@@ -14,6 +14,16 @@ public:
     virtual void Tick(float DeltaSeconds) override;
     UFUNCTION(BlueprintPure, Category="TownAge|Customization")
     class UTextureRenderTarget2D* GetRenderTarget() const { return RenderTarget; }
+    bool InitializeFromCharacter(class USkeletalMeshComponent* Source, class UAnimationAsset* IdleOverride = nullptr);
+    UFUNCTION(BlueprintCallable, Category="TownAge|Customization")
+    void SetFaceView(bool bInFaceView);
+    UFUNCTION(BlueprintPure, Category="TownAge|Customization")
+    bool IsFaceView() const { return bFaceView; }
+    UFUNCTION(BlueprintPure, Category="TownAge|Customization")
+    FVector GetPreviewCameraLocation() const;
+    UFUNCTION(BlueprintPure, Category="TownAge|Customization")
+    FVector GetPreviewViewTarget() const { return ViewTarget; }
+    bool CanDyeHair() const;
     void ApplyHairColor(uint8 Index);
     bool IsPreviewReady() const;
     UFUNCTION(BlueprintPure, Category="TownAge|Customization")
@@ -28,4 +38,14 @@ protected:
     UPROPERTY(Transient) TObjectPtr<class UTextureRenderTarget2D> RenderTarget;
     int32 CapturedFrames = 0;
     bool bTexturesPrestreamed = false;
+    bool bInitialized = false;
+    bool bFaceView = false;
+    FVector FullBodyTarget = FVector::ZeroVector;
+    FVector ViewTarget = FVector::ZeroVector;
+    FVector DesiredCameraLocation = FVector::ZeroVector;
+    float CharacterHeight = 170.f;
+    float FullBodyDistance = 360.f;
+    float FaceSurfaceOffset = 0.f;
+    FName HeadSocket;
+    void UpdateCameraTarget();
 };

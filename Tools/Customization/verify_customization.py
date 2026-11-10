@@ -53,6 +53,14 @@ def tick(delta):
             pawn.request_interaction()
             assert custom.is_server_session_active()
             assert custom.is_customization_open()
+            widgets = unreal.WidgetLibrary.get_all_widgets_of_class(world, unreal.TownAgeCustomizationWidget, True)
+            assert len(widgets) == 1
+            widget = widgets[0]
+            assert widget.get_editor_property('preview_image').get_visibility() == unreal.SlateVisibility.HIDDEN
+            assert widget.get_editor_property('loading_panel').get_visibility() == unreal.SlateVisibility.HIT_TEST_INVISIBLE
+            assert all(not chip.get_is_enabled() for chip in widget.get_editor_property('chips'))
+            STATE['widget'] = widget
+            STATE['checks'].append('loading_overlay_hides_uninitialized_preview_and_disables_chips')
             STATE['origin'] = pawn.get_actor_location()
             STATE['checks'].append('vanity_authority_opens_customization')
             advance(3, now)
@@ -62,7 +70,17 @@ def tick(delta):
                 return
             if 'idle_since' not in STATE:
                 STATE['idle_since'] = now
+            widget = STATE['widget']
+            assert widget.get_editor_property('preview_image').get_visibility() == unreal.SlateVisibility.HIT_TEST_INVISIBLE
+            assert widget.get_editor_property('loading_panel').get_visibility() == unreal.SlateVisibility.COLLAPSED
+            assert all(chip.get_is_enabled() for chip in widget.get_editor_property('chips'))
             mesh = preview.get_preview_mesh()
+            capture = preview.get_component_by_class(unreal.SceneCaptureComponent2D)
+            flags = {str(flag.show_flag_name): flag.enabled for flag in capture.get_editor_property('show_flag_settings')}
+            assert flags.get('TemporalAA') is False and flags.get('AntiAliasing') is False
+            source_mesh = pawn.get_editor_property('mesh')
+            assert mesh.get_editor_property('skeletal_mesh_asset') == source_mesh.get_editor_property('skeletal_mesh_asset')
+            assert mesh.get_material(0) != source_mesh.get_material(0), 'Preview needs an independent material instance'
             assert preview.get_outer() != pawn.get_outer(), 'Preview must belong to separate loaded ULevel'
             assert not preview.get_editor_property('replicates')
             assert abs(preview.get_actor_location().x - 100000) < 1
@@ -73,8 +91,27 @@ def tick(delta):
             if now - STATE['idle_since'] > 1.2:
                 assert len(set(STATE['heads'])) > 1, 'Idle pose must animate'
                 STATE['checks'].extend(['separate_local_preview_level', 'looping_idle_pose_changes', 'live_pawn_stays_interior_and_frozen'])
-                custom.choose_hair_color(1)
-                advance(4, now)
+                STATE['full_distance'] = (preview.get_preview_camera_location() - preview.get_preview_view_target()).length()
+                STATE['full_target_z'] = preview.get_preview_view_target().z
+                custom.set_face_view(True)
+                advance(30, now)
+        elif stage == 30 and elapsed > .7:
+            preview = custom.get_preview_actor()
+            assert preview.is_face_view()
+            distance = (preview.get_preview_camera_location() - preview.get_preview_view_target()).length()
+            assert distance < STATE['full_distance'] * .65
+            assert preview.get_preview_view_target().z > STATE['full_target_z'] + 10
+            unreal.RenderingLibrary.export_render_target(world, preview.get_render_target(), str(OUT), 'preview_face.png')
+            custom.set_face_view(False)
+            advance(31, now)
+        elif stage == 31 and elapsed > .7:
+            preview = custom.get_preview_actor()
+            assert not preview.is_face_view()
+            distance = (preview.get_preview_camera_location() - preview.get_preview_view_target()).length()
+            assert abs(distance - STATE['full_distance']) < 12
+            STATE['checks'].extend(['owner_model_and_independent_material', 'face_zoom_and_full_body_restore'])
+            custom.choose_hair_color(1)
+            advance(4, now)
         elif 4 <= stage <= 7 and elapsed > .4:
             index = stage - 3
             assert custom.get_hair_color_index() == index
@@ -96,6 +133,7 @@ def tick(delta):
                 custom.choose_hair_color(255)
                 assert custom.get_hair_color_index() == 4
                 STATE['checks'].extend(['four_live_and_preview_material_tints', 'invalid_palette_rejected'])
+                STATE.pop('widget', None)
                 custom.close_customization()
                 advance(8, now)
         elif stage == 8 and elapsed > .7:

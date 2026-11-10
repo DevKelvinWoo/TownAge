@@ -11,6 +11,8 @@ class ULevelStreamingDynamic;
 class ATownAgeCustomizationPreview;
 class AController;
 class APlayerController;
+class UMaterialInterface;
+class UAnimationAsset;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTownAgeCustomization, Log, All);
 
@@ -37,6 +39,16 @@ public:
     ATownAgeCustomizationPreview* GetPreviewActor() const { return PreviewActor; }
     UFUNCTION(BlueprintPure, Category="TownAge|Customization")
     bool IsPreviewReady() const { return bPreviewPresented; }
+    // Each avatar can author its own masked dye parents; never reuse another
+    // model's atlas merely because it shares a skeleton.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="TownAge|Customization")
+    TMap<int32, TObjectPtr<UMaterialInterface>> HairDyeMaterials;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="TownAge|Customization")
+    TSoftObjectPtr<UAnimationAsset> PreviewIdleAnimation;
+    UFUNCTION(BlueprintCallable, Category="TownAge|Customization")
+    void SetFaceView(bool bFaceView);
+    UFUNCTION(BlueprintPure, Category="TownAge|Customization")
+    bool CanDyeHair() const;
     UFUNCTION(BlueprintCallable, Category="TownAge|Customization")
     void ChooseHairColor(uint8 ColorIndex);
     UFUNCTION(BlueprintCallable, Category="TownAge|Customization")
@@ -58,6 +70,7 @@ private:
     TWeakObjectPtr<APlayerController> LocalController;
     bool bLocalOpen = false;
     bool bPreviewPresented = false;
+    bool bFaceViewRequested = false;
     bool bPreviousCursor = false;
     EMovementMode PreviousMovementMode = MOVE_Walking;
     uint8 PreviousCustomMovementMode = 0;
@@ -75,4 +88,5 @@ private:
     void EndServerSession();
     void CleanupLocalPreview();
     void UpdateLocalPreview();
+    void ApplyCharacterHairColor();
 };
