@@ -58,6 +58,7 @@ def tick(delta_time):
             hand = mesh.get_socket_transform('LeftHand', unreal.RelativeTransformSpace.RTS_COMPONENT)
             asset = animation.get_animation_asset()
             STATE['samples'].append({'time': now, 'stage': STATE['stage'], 'phase': str(phase),
+                'action_time': traversal.get_animation_time(), 'planar_speed': pawn.get_velocity().length2d(),
                 'position': [position.x, position.y, position.z],
                 'head_cm': [head.translation.x, head.translation.y, head.translation.z],
                 'head_quat': [head.rotation.x, head.rotation.y, head.rotation.z, head.rotation.w],
@@ -88,9 +89,15 @@ def tick(delta_time):
             pawn.request_interaction()  # Busy press must not start a second sequence.
             stage(2, now)
         elif current == 2:
+            if phase == PHASE.ACTION and 1.15 < traversal.get_animation_time() < 2.35:
+                assert 'BS_TownKeeper_Meshy_Locomotion' in animation.get_animation_asset().get_name(), 'Opening pose retained during walk'
+                assert pawn.get_velocity().length2d() > 30, 'Entry crossing stalled'
             if position.x > 40000 and not traversal.is_busy():
                 STATE['entered'] = True
                 STATE['checks'].append('push_enter_transfer_and_idle_restore')
+                assert mesh.get_editor_property('lighting_channels').channel1
+                assert not mesh.get_editor_property('lighting_channels').channel0
+                STATE['checks'].append('continuous_entry_walk_and_indoor_lighting_channel')
                 assert 'BS_TownKeeper_Meshy_Locomotion' in animation.get_animation_asset().get_name()
                 STATE['interior_position'] = [position.x, position.y, position.z]
                 stage(3, now)
@@ -114,6 +121,8 @@ def tick(delta_time):
             if position.x < 10000 and not traversal.is_busy():
                 STATE['exited'] = True
                 STATE['checks'].append('pull_exit_transfer_and_idle_restore_after_gc')
+                assert mesh.get_editor_property('lighting_channels').channel0
+                assert not mesh.get_editor_property('lighting_channels').channel1
                 assert 'BS_TownKeeper_Meshy_Locomotion' in animation.get_animation_asset().get_name()
                 assert abs(position.x - 2920) < 5 and abs(position.y + 920) < 5, position
                 stage(6, now)

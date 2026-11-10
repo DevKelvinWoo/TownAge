@@ -99,3 +99,44 @@ Packet loss/latency injection and physical mobile devices were not tested.
 
 Only source, source datasets and documentation are published. Models, clips,
 textures, imported assets and levels remain local.
+
+## Continuous entry and enlarged interior
+
+Exterior portals opt into `bWalkDuringCrossing`: the opening step ends and the
+velocity-driven locomotion Blend Space resumes at 1.05s. The opening curve clears
+the doorway at that same time; crossing and action finish together at 2.60s.
+There is no stationary gap or clip tail before transfer. Pull/exit timing stays
+unchanged. Slow room readiness still waits safely behind the existing fade.
+
+After building, run `setup_door_travel.py`, then `update_gray_interior.py` in
+Unreal Python. The latter backs up local map/table/vanity packages and updates
+only named fixtures. It expands usable floor from 6x6m to 12x12m away from the
+existing entrance, retaining the doorway, arrival anchors and streaming offset.
+An unlit black surround covers the view beyond the gray cutaway room.
+
+Movable room geometry and two shadowless point lights use lighting channel 1.
+The participant mesh switches channels on the server's committed transfer; this
+flag replicates to other viewers and rollback restores the origin channel.
+Village lights and other players are unchanged. This isolates direct sunlight;
+lighting channels do not isolate skylight/indirect illumination. See
+[Epic lighting channels](https://dev.epicgames.com/documentation/unreal-engine/using-lighting-channels-in-unreal-engine).
+
+`BP_GrayVanity` uses five cube components for the tabletop, drawers and mirror.
+Its replicated `VanityInteraction` uses the `VanityUse` row, front approach and
+180cm range. The existing G prompt and touch USE request both reach the existing
+server-validated dispatcher. This is a log-only `Vanity.Use` prototype: character
+customization, furniture art and a customization menu are future work.
+
+Run `verify_interior.py` before standalone PIE for floor/offset, vanity selection,
+authority request, facing and range checks. Run `verify_door_runtime.py` separately
+for enter/exit/cancellation, and `TownAge.Door.WalkHandoff` for the animation
+ownership boundary. PC touch simulation is separate from Android/iOS package
+and device validation.
+
+Verified for this revision: editor build/UHT; all 12 TownAge automation tests;
+PIE enter/crossing speed and locomotion handoff, exit, GC, cancellation and
+indoor/outdoor mesh lighting channels; enlarged streamed floor, replicated
+vanity selection/facing/range; native G and desktop simulated touch USE each
+producing the authoritative `Vanity.Use` log. Reports are under
+`Saved/Doors/InteriorUpdate` and `Saved/Doors/Integration`. This revision did not
+repeat remote two-player or physical Android/iOS tests.

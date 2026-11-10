@@ -40,6 +40,7 @@ namespace TownAgeDoor
     TOWNAGE_API float SmoothFraction(float Time, float Start, float End);
     TOWNAGE_API float OpenFraction(float ActionTime, const FTownAgeDoorTiming& Timing);
     TOWNAGE_API bool IsTimingValid(const FTownAgeDoorTiming& Timing);
+    TOWNAGE_API bool UsesActionAnimation(float ActionTime, const FTownAgeDoorTiming& Timing, bool bWalkDuringCrossing);
 }
 
 UENUM(BlueprintType)
@@ -63,6 +64,7 @@ struct FTownAgeDoorTraversalState
     UPROPERTY() double ActionStartTime = 0.;
     UPROPERTY() float AlignDuration = 0.f;
     UPROPERTY() FTransform Origin;
+    UPROPERTY() bool bOriginInteriorLighting = false;
 };
 
 USTRUCT()
@@ -118,6 +120,8 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Door") TSoftObjectPtr<UWorld> InteriorLevel;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Door") TSoftObjectPtr<UAnimSequence> ActionAnimation;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Door") FTownAgeDoorTiming Timing;
+    // Release the opening pose directly into velocity-driven locomotion.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Door") bool bWalkDuringCrossing = false;
 
     UFUNCTION(BlueprintPure, Category="Door") bool CanUse(const APawn* Pawn) const;
     UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category="Door") bool TryStart(APawn* Pawn);
@@ -155,6 +159,8 @@ public:
     const FTownAgeDoorTraversalState& GetState() const { return State; }
 private:
     UPROPERTY(ReplicatedUsing=OnRep_State) FTownAgeDoorTraversalState State;
+    // Per-pawn lighting keeps village sunlight out of the streamed interior.
+    UPROPERTY(Replicated) bool bInteriorLighting = false;
     UFUNCTION() void OnRep_State();
     UFUNCTION(Client, Reliable) void ClientTransfer(FTransform Destination, uint32 SequenceId);
     void SetPhase(ETownAgeDoorPhase Phase);
@@ -176,6 +182,8 @@ private:
     bool bSavedCameraLag = false;
     bool bSavedCameraCollision = true;
     bool bApplyingFade = false;
+    bool bLightingInitialized = false;
+    bool bAppliedInteriorLighting = false;
     int32 CameraLagResetFrames = 0;
     UPROPERTY() TObjectPtr<UAnimationAsset> SavedAnimation;
     bool bSavedLooping = true;

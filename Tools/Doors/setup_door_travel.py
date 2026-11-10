@@ -160,6 +160,17 @@ def author_portal(bp, interior):
     portal.set_editor_property('interior_side', interior)
     portal.set_editor_property('interior_level', unreal.load_asset(ROOM))
     portal.set_editor_property('action_animation', pull if interior else push)
+    portal.set_editor_property('walk_during_crossing', not interior)
+    timing = unreal.TownAgeDoorTiming()
+    if not interior:
+        # Finish the push and start the walk on the same frame. Cross 135cm
+        # in 1.55s, matching the existing 87cm/s locomotion cycle.
+        timing.set_editor_property('door_part_open_end', .72)
+        timing.set_editor_property('door_fully_open', timing.step_end)
+        timing.set_editor_property('traverse_start', timing.step_end)
+        timing.set_editor_property('traverse_end', 2.60)
+        timing.set_editor_property('action_duration', timing.traverse_end)
+    portal.set_editor_property('timing', timing)
     portal.set_editor_property('local_align_transform', transform((-2.4, -59.5, 88.2), 90) if interior else transform((120, 190, 89), -90))
     portal.set_editor_property('local_end_transform', transform((-2.4, 53.5, 88.2), 90) if interior else transform((120, 33, 89), -90))
     portal.set_editor_property('destination_transform', transform((2920, -920, 88.2), 90) if interior else transform((49997.6, 120, 88.2), -90))

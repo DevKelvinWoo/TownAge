@@ -33,4 +33,29 @@ bool FTownAgeDoorTimingTest::RunTest(const FString& Parameters)
     TestFalse(TEXT("Nonpositive timeout is invalid"), TownAgeDoor::IsTimingValid(Timing));
     return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownAgeDoorWalkHandoffTest, "TownAge.Door.WalkHandoff",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FTownAgeDoorWalkHandoffTest::RunTest(const FString& Parameters)
+{
+    FTownAgeDoorTiming Timing;
+    Timing.DoorPartOpenEnd = .72f;
+    Timing.DoorFullyOpen = Timing.StepEnd;
+    Timing.TraverseStart = Timing.StepEnd;
+    Timing.TraverseEnd = 2.6f;
+    Timing.ActionDuration = Timing.TraverseEnd;
+    TestTrue(TEXT("Continuous entry retains safe door order"), TownAgeDoor::IsTimingValid(Timing));
+    TestTrue(TEXT("Opening pose owns contact before the walk"),
+        TownAgeDoor::UsesActionAnimation(Timing.TraverseStart - .001f, Timing, true));
+    TestFalse(TEXT("Walk starts on the same frame that opening ends"),
+        TownAgeDoor::UsesActionAnimation(Timing.TraverseStart, Timing, true));
+    TestFalse(TEXT("Door pose cannot resume during the crossing"),
+        TownAgeDoor::UsesActionAnimation(Timing.TraverseEnd, Timing, true));
+    TestFalse(TEXT("A delayed load cannot restore the obsolete door pose"),
+        TownAgeDoor::UsesActionAnimation(Timing.ActionDuration + 1.f, Timing, true));
+    TestTrue(TEXT("Exit keeps the approved pull animation"),
+        TownAgeDoor::UsesActionAnimation(Timing.TraverseEnd, Timing, false));
+    return true;
+}
 #endif

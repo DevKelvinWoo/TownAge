@@ -72,6 +72,11 @@ bool TownAgeDoor::IsTimingValid(const FTownAgeDoorTiming& T)
         && T.LoadTimeout >= T.ActionDuration;
 }
 
+bool TownAgeDoor::UsesActionAnimation(float ActionTime, const FTownAgeDoorTiming& T, bool bWalkDuringCrossing)
+{
+    return !bWalkDuringCrossing || ActionTime < T.TraverseStart;
+}
+
 void UTownAgeDoorSubsystem::RegisterPortal(UTownAgeDoorPortalComponent* Portal)
 {
     Portals.RemoveAll([](const auto& Entry) { return !Entry.IsValid(); });
@@ -300,7 +305,9 @@ double UTownAgeDoorTraversalComponent::ServerTime() const { return WorldServerTi
 UAnimSequence* UTownAgeDoorTraversalComponent::GetActiveAnimation() const
 {
     return (State.Phase == ETownAgeDoorPhase::Action || State.Phase == ETownAgeDoorPhase::WaitReady)
-        && IsValid(State.Portal) ? State.Portal->GetLoadedAnimation() : nullptr;
+        && IsValid(State.Portal)
+        && TownAgeDoor::UsesActionAnimation(GetAnimationTime(), State.Portal->Timing, State.Portal->bWalkDuringCrossing)
+        ? State.Portal->GetLoadedAnimation() : nullptr;
 }
 
 float UTownAgeDoorTraversalComponent::GetAnimationTime() const
@@ -324,6 +331,7 @@ bool UTownAgeDoorTraversalComponent::ServerStart(UTownAgeDoorPortalComponent* Po
     if (!Registry->Reserve(Portal, this)) return false;
     State.Portal = Portal;
     State.Origin = Character->GetActorTransform();
+    State.bOriginInteriorLighting = bInteriorLighting;
     const FTransform Align = Portal->GetWorldAlignTransform();
     const float MoveDuration = float(FVector::Dist2D(State.Origin.GetLocation(), Align.GetLocation()) / 87.);
     const float TurnDuration = FMath::Abs(FMath::FindDeltaAngleDegrees(State.Origin.Rotator().Yaw, Align.Rotator().Yaw)) / 360.f;
@@ -476,7 +484,8 @@ void UTownAgeDoorTraversalComponent::RestoreAnimation()
     if (auto* Animation = SingleNode(CharacterOwner(this)); Animation && SavedAnimation)
     {
         Animation->SetAnimationAsset(SavedAnimation, bSavedLooping, SavedPlayRate);
-        Animation->SetBlendSpacePosition(FVector::ZeroVector);
+        const ACharacter* Character = CharacterOwner(this);
+        Animation->SetBlendSpacePosition(FVector(Character ? Character->GetVelocity().Size2D() : 0.f, 0.f, 0.f));
         Animation->SetPlaying(true);
         SavedAnimation = nullptr;
     }
@@ -487,6 +496,12 @@ void UTownAgeDoorTraversalComponent::UpdateCosmetics()
     ACharacter* Character = CharacterOwner(this);
     if (!Character) return;
     UAnimSingleNodeInstance* Animation = SingleNode(Character);
+    if (Character->GetMesh() && (!bLightingInitialized || bAppliedInteriorLighting != bInteriorLighting))
+    {
+        Character->GetMesh()->SetLightingChannels(!bInteriorLighting, bInteriorLighting, false);
+        bAppliedInteriorLighting = bInteriorLighting;
+        bLightingInitialized = true;
+    }
     UAnimSequence* Clip = GetActiveAnimation();
     if (Animation && Clip)
     {
@@ -571,6 +586,7 @@ void UTownAgeDoorTraversalComponent::CancelTraversal(bool bRestoreOrigin)
         if (bRestoreOrigin && !Character->IsActorBeingDestroyed())
         {
             Character->TeleportTo(State.Origin.GetLocation(), State.Origin.Rotator(), false, false);
+            bInteriorLighting = State.bOriginInteriorLighting;
             if (Character->GetController()) ClientTransfer(Character->GetActorTransform(), State.SequenceId);
         }
         UE_LOG(LogTownAgeDoor, Warning, TEXT("Door traversal cancelled: Player=%s Sequence=%u"), *Character->GetName(), State.SequenceId);
@@ -654,6 +670,7 @@ void UTownAgeDoorTraversalComponent::TickComponent(float DeltaTime, ELevelTick T
         }
         Character->GetCharacterMovement()->StopMovementImmediately();
         const FTransform FinalDestination(Rotation, Destination);
+        bInteriorLighting = !State.Portal->bInteriorSide;
         ClientTransfer(FinalDestination, State.SequenceId);
         if (auto* Registry = GetWorld()->GetSubsystem<UTownAgeDoorSubsystem>())
             Registry->StartClose(State.Portal->PortalId, this, Now);
@@ -668,4 +685,5 @@ void UTownAgeDoorTraversalComponent::GetLifetimeReplicatedProps(TArray<FLifetime
 {
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
     DOREPLIFETIME(UTownAgeDoorTraversalComponent, State);
+    DOREPLIFETIME(UTownAgeDoorTraversalComponent, bInteriorLighting);
 }
