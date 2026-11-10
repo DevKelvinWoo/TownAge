@@ -15,6 +15,8 @@ void ATownAgeHUD::DrawHUD()
 {
     Super::DrawHUD();
     if (!Canvas) return;
+    const ATownAgePlayer* Player = PlayerOwner ? Cast<ATownAgePlayer>(PlayerOwner->GetPawn()) : nullptr;
+    if (Player && Player->IsCustomizing()) return;
     const FTownAgeTouchLayout Layout(FVector2D(Canvas->SizeX, Canvas->SizeY));
     if (const auto* Time = GetWorld()->GetGameState<ATownAgeGameState>(); Time && Time->IsClockReady())
     {
@@ -32,7 +34,6 @@ void ATownAgeHUD::DrawHUD()
         GetTextSize(Phase, TextWidth, TextHeight, Font, .9f * Scale);
         DrawText(Phase, FLinearColor(.82f, .88f, .80f), Center - TextWidth * .5f, Top + 43.f * Scale, Font, .9f * Scale);
     }
-    const ATownAgePlayer* Player = PlayerOwner ? Cast<ATownAgePlayer>(PlayerOwner->GetPawn()) : nullptr;
     if (!Player) return;
     auto Outline = [&](FVector2D C, float Radius, FLinearColor Color)
     {

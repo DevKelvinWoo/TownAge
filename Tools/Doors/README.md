@@ -124,8 +124,8 @@ lighting channels do not isolate skylight/indirect illumination. See
 `BP_GrayVanity` uses five cube components for the tabletop, drawers and mirror.
 Its replicated `VanityInteraction` uses the `VanityUse` row, front approach and
 180cm range. The existing G prompt and touch USE request both reach the existing
-server-validated dispatcher. This is a log-only `Vanity.Use` prototype: character
-customization, furniture art and a customization menu are future work.
+server-validated dispatcher. It now opens the hair customization prototype;
+see `Tools/Customization/README.md`. Furniture art remains a placeholder.
 
 Run `verify_interior.py` before standalone PIE for floor/offset, vanity selection,
 authority request, facing and range checks. Run `verify_door_runtime.py` separately

@@ -4,6 +4,7 @@
 #include "Net/UnrealNetwork.h"
 #include "TownAgePlayer.h"
 #include "TownAgeDoor.h"
+#include "TownAgeCustomizationComponent.h"
 
 DEFINE_LOG_CATEGORY(LogTownAgeInteraction);
 
@@ -141,7 +142,7 @@ bool UTownAgeInteractionTargetComponent::CanInteract(const APawn* Interactor) co
     if (!bInteractionEnabled || !IsValid(GetOwner()) || !IsValid(Interactor)
         || GetOwner()->IsActorBeingDestroyed() || Interactor->GetWorld() != GetWorld())
         return false;
-    if (const auto* Player = Cast<ATownAgePlayer>(Interactor); Player && Player->IsDoorBusy())
+    if (const auto* Player = Cast<ATownAgePlayer>(Interactor); Player && (Player->IsDoorBusy() || Player->IsCustomizing()))
         return false;
     const auto* Row = GetDefinition();
     if (Row && Row->Action == ETownAgeInteractionAction::DoorTransition)
@@ -162,6 +163,12 @@ void UTownAgeInteractionTargetComponent::ExecuteInteraction_Implementation(APawn
     if (!GetOwner() || !GetOwner()->HasAuthority() || !CanInteract(Interactor))
         return;
     const FTownAgeInteractionRow* Row = GetDefinition();
+    if (Row && Row->Action == ETownAgeInteractionAction::OpenCustomization)
+    {
+        if (auto* Player = Cast<ATownAgePlayer>(Interactor))
+            if (auto* Customization = Player->GetCustomizationComponent()) Customization->ServerBegin(this);
+        return;
+    }
     if (Row && Row->Action == ETownAgeInteractionAction::DoorTransition)
     {
         if (auto* Portal = GetOwner()->FindComponentByClass<UTownAgeDoorPortalComponent>())

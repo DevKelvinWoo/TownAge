@@ -15,7 +15,8 @@ UENUM(BlueprintType)
 enum class ETownAgeInteractionAction : uint8
 {
     LogOnly,
-    DoorTransition
+    DoorTransition,
+    OpenCustomization
 };
 
 USTRUCT(BlueprintType)

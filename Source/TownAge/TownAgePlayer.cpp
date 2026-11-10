@@ -16,6 +16,7 @@
 #include "TownAgeInteraction.h"
 #include "TownAgeDoor.h"
 #include "TownAgeDoorAnimInstance.h"
+#include "TownAgeCustomizationComponent.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
 #include "Animation/BlendSpace1D.h"
@@ -34,6 +35,7 @@ ATownAgePlayer::ATownAgePlayer()
     bReplicates = true;
     Interaction = CreateDefaultSubobject<UTownAgeInteractionComponent>(TEXT("Interaction"));
     DoorTraversal = CreateDefaultSubobject<UTownAgeDoorTraversalComponent>(TEXT("DoorTraversal"));
+    Customization = CreateDefaultSubobject<UTownAgeCustomizationComponent>(TEXT("Customization"));
     GetCapsuleComponent()->InitCapsuleSize(38.f, 88.f);
     bUseControllerRotationYaw = false;
     GetCharacterMovement()->bOrientRotationToMovement = true;
@@ -126,6 +128,7 @@ bool ATownAgePlayer::UsesTouchControls() const
 
 bool ATownAgePlayer::IsSprintControlHeld() const
 {
+    if (IsCustomizing()) return false;
     const auto* ChatPC = Cast<ATownAgePlayerController>(Controller);
     if (ChatPC && ChatPC->IsChatOpen()) return false;
     const APlayerController* PC = Cast<APlayerController>(Controller);
@@ -136,7 +139,12 @@ void ATownAgePlayer::RequestInteraction()
 {
     const auto* PC = Cast<ATownAgePlayerController>(Controller);
     if (PC && PC->IsChatOpen()) return;
-    if (!IsDoorBusy() && Interaction) Interaction->TryInteract();
+    if (!IsDoorBusy() && !IsCustomizing() && Interaction) Interaction->TryInteract();
+}
+
+bool ATownAgePlayer::IsCustomizing() const
+{
+    return Customization && Customization->IsCustomizationOpen();
 }
 
 bool ATownAgePlayer::IsDoorBusy() const
@@ -185,8 +193,8 @@ void ATownAgePlayer::Tick(float DeltaSeconds)
     Super::Tick(DeltaSeconds);
     if (HasAuthority())
     {
-        if (IsDoorBusy()) bSprintRequested = false;
-        bSprinting = !IsDoorBusy() && bSprintRequested && !StaminaState.bExhausted && StaminaState.Value > 0.f
+        if (IsDoorBusy() || IsCustomizing()) bSprintRequested = false;
+        bSprinting = !IsDoorBusy() && !IsCustomizing() && bSprintRequested && !StaminaState.bExhausted && StaminaState.Value > 0.f
             && GetVelocity().SizeSquared2D() > 100.f && GetCharacterMovement()->IsMovingOnGround();
         StaminaState.Update(DeltaSeconds, bSprinting);
         Stamina = StaminaState.Value;
@@ -208,7 +216,7 @@ void ATownAgePlayer::Tick(float DeltaSeconds)
     if (!PC || !IsLocallyControlled()) return;
     UpdateTouchControls(PC);
     const auto* ChatPC = Cast<ATownAgePlayerController>(PC);
-    if (IsDoorBusy() || (ChatPC && ChatPC->IsChatOpen()))
+    if (IsDoorBusy() || IsCustomizing() || (ChatPC && ChatPC->IsChatOpen()))
     {
         // Continue sampling touches so a held disabled interaction button
         // cannot become a new press as the traversal finishes.

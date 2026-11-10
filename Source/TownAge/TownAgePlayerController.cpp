@@ -1,6 +1,7 @@
 #include "TownAgePlayerController.h"
 #include "TownAgeChatWidget.h"
 #include "TownAgeChat.h"
+#include "TownAgePlayer.h"
 #include "GameFramework/PlayerState.h"
 #include "Engine/World.h"
 #include "Components/InputComponent.h"
@@ -30,6 +31,7 @@ void ATownAgePlayerController::SetupInputComponent()
 
 void ATownAgePlayerController::OpenChat()
 {
+    if (const auto* TownPlayer = Cast<ATownAgePlayer>(GetPawn()); TownPlayer && TownPlayer->IsCustomizing()) return;
     if (!ChatWidget || bChatOpen) return;
     bChatOpen = true;
     bPreviousCursor = bShowMouseCursor;
