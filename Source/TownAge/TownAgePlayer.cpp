@@ -27,9 +27,10 @@
 
 namespace
 {
-    // Rounded stance-foot speeds measured on the Meshy provider cycles.
-    constexpr float WalkSpeed = 87.f;
+    constexpr float WalkSpeed = 120.f;
     constexpr float RunSpeed = 304.f;
+    // The approved Blend Space's walk sample is authored for this stride speed.
+    constexpr float AuthoredWalkSpeed = 87.f;
 }
 
 ATownAgePlayer::ATownAgePlayer()
@@ -213,7 +214,13 @@ void ATownAgePlayer::Tick(float DeltaSeconds)
     if (!DoorTraversal || !DoorTraversal->GetActiveAnimation())
     if (UAnimSingleNodeInstance* Animation = Cast<UAnimSingleNodeInstance>(GetMesh()->GetAnimInstance()))
     {
-        Animation->SetBlendSpacePosition(FVector(bAnimationMoving ? FMath::Clamp(PlanarSpeed, 0.f, RunSpeed) : 0.f, 0, 0));
+        const float Speed = bAnimationMoving ? FMath::Clamp(PlanarSpeed, 0.f, RunSpeed) : 0.f;
+        const float SampleSpeed = Speed <= WalkSpeed ? Speed * AuthoredWalkSpeed / WalkSpeed
+            : FMath::Lerp(AuthoredWalkSpeed, RunSpeed, (Speed - WalkSpeed) / (RunSpeed - WalkSpeed));
+        const float PlaybackRate = Speed <= WalkSpeed ? FMath::Lerp(1.f, WalkSpeed / AuthoredWalkSpeed, Speed / WalkSpeed)
+            : Speed / SampleSpeed;
+        Animation->SetBlendSpacePosition(FVector(SampleSpeed, 0.f, 0.f));
+        if (!FMath::IsNearlyEqual(Animation->GetPlayRate(), PlaybackRate)) Animation->SetPlayRate(PlaybackRate);
     }
     APlayerController* PC = Cast<APlayerController>(Controller);
     if (!PC || !IsLocallyControlled()) return;

@@ -7,14 +7,16 @@ bool FTownAgeStaminaTest::RunTest(const FString& Parameters)
 {
     FTownAgeStamina State;
     State.Update(1.f, true);
-    TestEqual(TEXT("One second sprint consumes 20"), State.Value, 80.f);
+    TestEqual(TEXT("One second sprint consumes 12"), State.Value, 88.f);
     State.Update(1.f, false);
-    TestEqual(TEXT("No regeneration during recovery delay"), State.Value, 80.f);
+    TestEqual(TEXT("No regeneration during recovery delay"), State.Value, 88.f);
     State.Update(1.f, false);
-    TestEqual(TEXT("Only time after delay regenerates"), State.Value, 87.5f);
+    TestEqual(TEXT("Only time after delay regenerates"), State.Value, 95.5f);
     State.Update(20.f, false);
     TestEqual(TEXT("Recovery clamps to full"), State.Value, 100.f);
-    State.Update(10.f, true);
+    State.Update(8.f, true);
+    TestEqual(TEXT("A full bar lasts past eight seconds"), State.Value, 4.f);
+    State.Update(1.f, true);
     TestEqual(TEXT("Drain clamps at zero"), State.Value, 0.f);
     TestTrue(TEXT("Exhaustion locks sprint"), State.bExhausted);
     State.Update(2.f, false);

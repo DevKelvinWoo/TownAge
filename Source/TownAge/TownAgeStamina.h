@@ -13,7 +13,7 @@ struct FTownAgeStamina
         const float Dt = FMath::Max(0.f, DeltaSeconds);
         if (bConsume && !bExhausted)
         {
-            Value = FMath::Max(0.f, Value - 20.f * Dt);
+            Value = FMath::Max(0.f, Value - 12.f * Dt);
             RecoveryDelayRemaining = 1.5f;
             bExhausted = Value <= 0.f;
         }
