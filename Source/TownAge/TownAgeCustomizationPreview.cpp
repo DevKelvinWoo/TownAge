@@ -1,6 +1,7 @@
 #include "TownAgeCustomizationPreview.h"
 
 #include "TownAgeAppearance.h"
+#include "TownAgeWardrobe.h"
 #include "Animation/AnimSequence.h"
 #include "Animation/AnimSingleNodeInstance.h"
 #include "Animation/BlendSpace.h"
@@ -215,6 +216,13 @@ bool ATownAgeCustomizationPreview::InitializeFromCharacter(USkeletalMeshComponen
     Capture->SetWorldLocation(DesiredCameraLocation);
     Capture->SetWorldRotation((ViewTarget - DesiredCameraLocation).Rotation());
     return true;
+}
+
+void ATownAgeCustomizationPreview::ApplyOutfitMesh(USkeletalMesh* Outfit)
+{
+    if (!Outfit || Outfit == Mesh->GetSkeletalMeshAsset()) return;
+    TownAgeWardrobe::ApplyMesh(*Mesh, *Outfit);
+    Mesh->PrestreamTextures(3.f, false);
 }
 
 void ATownAgeCustomizationPreview::Tick(float DeltaSeconds)

@@ -3,3 +3,4 @@ DoorInspect,Inspect Door,200,150,100,LogOnly,Door.Inspect
 DoorEnter,Enter House,200,150,100,DoorTransition,Door.Enter
 DoorExit,Leave House,180,150,100,DoorTransition,Door.Exit
 VanityUse,Use Vanity,180,150,80,OpenCustomization,Vanity.Use
+WardrobeUse,Use Wardrobe,180,150,80,OpenWardrobe,Wardrobe.Use

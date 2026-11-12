@@ -163,7 +163,8 @@ void UTownAgeInteractionTargetComponent::ExecuteInteraction_Implementation(APawn
     if (!GetOwner() || !GetOwner()->HasAuthority() || !CanInteract(Interactor))
         return;
     const FTownAgeInteractionRow* Row = GetDefinition();
-    if (Row && Row->Action == ETownAgeInteractionAction::OpenCustomization)
+    if (Row && (Row->Action == ETownAgeInteractionAction::OpenCustomization
+        || Row->Action == ETownAgeInteractionAction::OpenWardrobe))
     {
         if (auto* Player = Cast<ATownAgePlayer>(Interactor))
             if (auto* Customization = Player->GetCustomizationComponent()) Customization->ServerBegin(this);

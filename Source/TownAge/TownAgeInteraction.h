@@ -16,7 +16,8 @@ enum class ETownAgeInteractionAction : uint8
 {
     LogOnly,
     DoorTransition,
-    OpenCustomization
+    OpenCustomization,
+    OpenWardrobe
 };
 
 USTRUCT(BlueprintType)

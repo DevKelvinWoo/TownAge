@@ -20,6 +20,9 @@ class TOWNAGE_API UTownAgeCustomizationWidget : public UUserWidget
 public:
     void SetPreviewTexture(UTextureRenderTarget2D* Texture);
     void SetSelectedColor(uint8 Index);
+    void SetWardrobeState(uint8 Owned, uint8 Available, uint8 Outfit);
+    void SetSelectedOutfit(uint8 Outfit);
+    FTownAgeColorSelected OnOutfitSelected;
     void SetReady(bool bInReady);
     void SetCategory(ETownAgeCosmeticCategory InCategory);
     void SetMakeupState(const FTownAgeMakeupState& InState);
@@ -43,6 +46,9 @@ private:
     void QueueMakeupChange();
     void FlushMakeupChange();
     void SetAmount(int32 Index, float Value);
+    UFUNCTION() void DefaultOutfitClicked();
+    UFUNCTION() void PinkDressClicked();
+    UFUNCTION() void YellowOverallsClicked();
     UFUNCTION() void RedClicked();
     UFUNCTION() void BlueClicked();
     UFUNCTION() void GreenClicked();
@@ -89,6 +95,11 @@ private:
     UPROPERTY() TArray<TObjectPtr<class USlider>> AmountSliders;
     UPROPERTY() TArray<TObjectPtr<class UTextBlock>> AmountLabels;
     UPROPERTY() TObjectPtr<UTextureRenderTarget2D> PreviewTexture;
+    UPROPERTY() TObjectPtr<class UTextBlock> Title;
+    UPROPERTY() TArray<TObjectPtr<class UButton>> OutfitButtons;
+    uint8 OwnedOutfits = 0;
+    uint8 AvailableOutfits = 0;
+    uint8 SelectedOutfit = 0;
     FTownAgeMakeupState MakeupState;
     ETownAgeCosmeticCategory Category = ETownAgeCosmeticCategory::Dye;
     bool bReady = false;

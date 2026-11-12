@@ -4,6 +4,7 @@
 #include "Containers/Ticker.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "TownAgeCosmeticModules.h"
+#include "TownAgeWardrobe.h"
 #include "TownAgeProfiles.generated.h"
 
 USTRUCT()
@@ -12,6 +13,9 @@ struct FTownAgeAppearanceProfile
     GENERATED_BODY()
     UPROPERTY() uint8 HairColorIndex = 0;
     UPROPERTY() FTownAgeMakeupState Makeup;
+
+    UPROPERTY() uint8 Outfit = TownAgeWardrobe::Default;
+    UPROPERTY() uint8 OwnedOutfits = TownAgeWardrobe::TestOwnership;
 
     bool IsValid() const;
 };

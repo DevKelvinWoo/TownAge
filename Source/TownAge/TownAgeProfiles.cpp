@@ -46,7 +46,8 @@ bool ReadByte(const FJsonObject& Object, const TCHAR* Key, uint8& Out)
 
 bool FTownAgeAppearanceProfile::IsValid() const
 {
-    return TownAgeAppearance::IsValidHairColor(HairColorIndex) && UTownAgeMakeupModule::Validate(Makeup);
+    return TownAgeAppearance::IsValidHairColor(HairColorIndex) && UTownAgeMakeupModule::Validate(Makeup)
+        && (OwnedOutfits & ~TownAgeWardrobe::TestOwnership) == 0 && TownAgeWardrobe::Owns(OwnedOutfits, Outfit);
 }
 
 bool UTownAgeLocalProfileStore::Open(const FString& Directory)
@@ -84,13 +85,16 @@ ETownAgeProfileLoad UTownAgeLocalProfileStore::Read(const FString& Account, FTow
     double Version = 0;
     const TSharedPtr<FJsonObject>* Appearance = nullptr;
     FTownAgeAppearanceProfile Loaded;
-    if (!Record->TryGetNumberField(TEXT("version"), Version) || Version != 1
+    if (!Record->TryGetNumberField(TEXT("version"), Version) || (Version != 1 && Version != 2)
         || !Record->TryGetStringField(TEXT("account"), StoredAccount) || StoredAccount != Account
         || !Record->TryGetObjectField(TEXT("appearance"), Appearance) || !Appearance->IsValid()
         || !ReadByte(*Appearance->Get(), TEXT("hairColor"), Loaded.HairColorIndex))
         return ETownAgeProfileLoad::Failed;
     for (const FMakeupField& Field : MakeupFields)
         if (!ReadByte(*Appearance->Get(), Field.Key, Loaded.Makeup.*Field.Member)) return ETownAgeProfileLoad::Failed;
+    if (Version == 2 && (!ReadByte(*Appearance->Get(), TEXT("outfit"), Loaded.Outfit)
+        || !ReadByte(*Appearance->Get(), TEXT("ownedOutfits"), Loaded.OwnedOutfits)))
+        return ETownAgeProfileLoad::Failed;
     if (!Loaded.IsValid()) return ETownAgeProfileLoad::Failed;
     Out = Loaded;
     return ETownAgeProfileLoad::Loaded;
@@ -104,7 +108,9 @@ bool UTownAgeLocalProfileStore::Write(const FString& Account, const FTownAgeAppe
     for (const FMakeupField& Field : MakeupFields)
         Appearance->SetNumberField(Field.Key, Profile.Makeup.*Field.Member);
     const TSharedRef<FJsonObject> Record = MakeShared<FJsonObject>();
-    Record->SetNumberField(TEXT("version"), 1);
+    Appearance->SetNumberField(TEXT("outfit"), Profile.Outfit);
+    Appearance->SetNumberField(TEXT("ownedOutfits"), Profile.OwnedOutfits);
+    Record->SetNumberField(TEXT("version"), 2);
     Record->SetStringField(TEXT("account"), Account);
     Record->SetObjectField(TEXT("appearance"), Appearance);
     FString Contents;

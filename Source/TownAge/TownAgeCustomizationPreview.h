@@ -26,6 +26,7 @@ public:
     FVector GetPreviewViewTarget() const { return ViewTarget; }
     bool CanDyeHair() const;
     void ApplyHairColor(uint8 Index);
+    void ApplyOutfitMesh(class USkeletalMesh* Outfit);
     void ApplyMakeup(const FTownAgeMakeupState& State);
     bool IsPreviewReady() const;
     UFUNCTION(BlueprintPure, Category="TownAge|Customization")

@@ -1,4 +1,5 @@
 #include "TownAgeCustomizationWidget.h"
+#include "TownAgeWardrobe.h"
 
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "Blueprint/WidgetTree.h"
@@ -117,7 +118,8 @@ void UTownAgeCustomizationWidget::NativeOnInitialized()
     auto* Content = WidgetTree->ConstructWidget<UVerticalBox>(); Options->AddChild(Content);
     auto* Header = WidgetTree->ConstructWidget<UHorizontalBox>();
     Content->AddChildToVerticalBox(Header)->SetPadding(FMargin(0, 0, 0, 12));
-    Header->AddChildToHorizontalBox(Text(NSLOCTEXT("TownAge", "CustomizationTitle", "나만의 스타일"), 24))
+    Title = Text(NSLOCTEXT("TownAge", "CustomizationTitle", "나만의 스타일"), 24);
+    Header->AddChildToHorizontalBox(Title)
         ->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
     auto* Close = Button(NSLOCTEXT("TownAge", "CloseCustomization", "닫기"), FLinearColor(.16f, .22f, .18f));
     Header->AddChild(Close); Close->OnClicked.AddDynamic(this, &UTownAgeCustomizationWidget::CloseClicked);
@@ -243,6 +245,21 @@ void UTownAgeCustomizationWidget::NativeOnInitialized()
     IrisButtons[2]->OnClicked.AddDynamic(this, &UTownAgeCustomizationWidget::SageClicked);
     IrisButtons[3]->OnClicked.AddDynamic(this, &UTownAgeCustomizationWidget::BlueGrayClicked);
     IrisButtons[4]->OnClicked.AddDynamic(this, &UTownAgeCustomizationWidget::LavenderClicked);
+    auto* Wardrobe = WidgetTree->ConstructWidget<UVerticalBox>();
+    CategoryPanels->AddChild(Wardrobe);
+    Wardrobe->AddChildToVerticalBox(Text(NSLOCTEXT("TownAge", "OwnedOutfits", "보유 의상"), 21))
+        ->SetPadding(FMargin(0, 0, 0, 10));
+    for (const FText& Label : {NSLOCTEXT("TownAge", "DefaultOutfit", "기본 의상"),
+        NSLOCTEXT("TownAge", "PinkDress", "핑크색 드레스"),
+        NSLOCTEXT("TownAge", "YellowOveralls", "노란색 멜빵바지")})
+    {
+        auto* Choice = Button(Label, FLinearColor(.16f, .22f, .18f), 18);
+        Wardrobe->AddChildToVerticalBox(Choice)->SetPadding(FMargin(0, 0, 0, 8));
+        OutfitButtons.Add(Choice);
+    }
+    OutfitButtons[0]->OnClicked.AddDynamic(this, &ThisClass::DefaultOutfitClicked);
+    OutfitButtons[1]->OnClicked.AddDynamic(this, &ThisClass::PinkDressClicked);
+    OutfitButtons[2]->OnClicked.AddDynamic(this, &ThisClass::YellowOverallsClicked);
     Status = Text(NSLOCTEXT("TownAge", "LoadingCharacter", "캐릭터를 준비하고 있어요."), 13, FLinearColor(.68f,.75f,.67f));
     Content->AddChildToVerticalBox(Status)->SetPadding(FMargin(3, 12, 3, 0));
     SetPreviewTexture(PreviewTexture); SetSelectedColor(SelectedColor); SetCategory(Category); SetMakeupState(MakeupState);
@@ -293,9 +310,14 @@ void UTownAgeCustomizationWidget::SetReady(bool bInReady)
     for (int32 I=0; I<CategoryButtons.Num(); ++I) CategoryButtons[I]->SetIsEnabled(bShowPreview && (AllowedCategories & (1 << I)) != 0);
     for (const auto& Chip : Chips) Chip->SetIsEnabled(bShowPreview && bDyeAvailable);
     for (const auto& Control : MakeupControls) Control->SetIsEnabled(bShowPreview && bMakeupAvailable);
+    for (int32 Index = 0; Index < OutfitButtons.Num(); ++Index)
+        OutfitButtons[Index]->SetIsEnabled(bShowPreview && Index != SelectedOutfit
+            && TownAgeWardrobe::Owns(AvailableOutfits, uint8(Index)));
     if (!Status) return;
     FText Notice = NSLOCTEXT("TownAge", "AppliedAppearance", "변경 사항은 캐릭터에 바로 적용됩니다.");
     if (!bShowPreview) Notice = NSLOCTEXT("TownAge", "LoadingCharacter", "캐릭터를 준비하고 있어요.");
+    else if (Category == ETownAgeCosmeticCategory::Wardrobe && (OwnedOutfits & ~AvailableOutfits) != 0)
+        Notice = NSLOCTEXT("TownAge", "WardrobeModelUnavailable", "일부 의상을 불러올 수 없습니다.");
     else if (Category == ETownAgeCosmeticCategory::Surgery) Notice = NSLOCTEXT("TownAge", "SurgeryPreviewOnly", "성형은 얼굴 미리보기만 제공됩니다.");
     else if (Category == ETownAgeCosmeticCategory::Dye && !bDyeAvailable) Notice = NSLOCTEXT("TownAge", "DyeUnavailable", "이 캐릭터의 염색 설정이 아직 준비되지 않았어요.");
     else if (Category == ETownAgeCosmeticCategory::Makeup && !bMakeupAvailable) Notice = NSLOCTEXT("TownAge", "MakeupUnavailable", "이 캐릭터의 화장 설정이 아직 준비되지 않았어요.");
@@ -305,14 +327,19 @@ void UTownAgeCustomizationWidget::SetCategory(ETownAgeCosmeticCategory InCategor
 {
     Category = InCategory;
     const int32 Active = int32(Category);
-    if (CategoryPanels) CategoryPanels->SetActiveWidgetIndex(FMath::Clamp(Active,0,2));
+    const bool bWardrobe = Category == ETownAgeCosmeticCategory::Wardrobe;
+    if (Title) Title->SetText(bWardrobe ? NSLOCTEXT("TownAge", "WardrobeTitle", "옷장")
+        : NSLOCTEXT("TownAge", "CustomizationTitle", "나만의 스타일"));
+    if (CategoryPanels) CategoryPanels->SetActiveWidgetIndex(Active);
+    for (const auto& Tab : CategoryButtons)
+        Tab->SetVisibility(bWardrobe ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
     for (int32 I=0; I<CategoryButtons.Num(); ++I)
         CategoryButtons[I]->SetBackgroundColor(I==Active ? FLinearColor(.28f,.42f,.27f) : FLinearColor(.11f,.16f,.13f));
     SetReady(bReady);
 }
 void UTownAgeCustomizationWidget::SetAllowedCategories(uint8 Mask)
 {
-    AllowedCategories = Mask & 7; SetReady(bReady);
+    AllowedCategories = Mask; SetReady(bReady);
 }
 void UTownAgeCustomizationWidget::SetDyeAvailable(bool bAvailable) { bDyeAvailable=bAvailable; SetReady(bReady); }
 void UTownAgeCustomizationWidget::SetMakeupAvailable(bool bAvailable) { bMakeupAvailable=bAvailable; SetReady(bReady); }
@@ -433,3 +460,27 @@ FReply UTownAgeCustomizationWidget::NativeOnPreviewKeyDown(const FGeometry& Geom
     if (Event.GetKey()==EKeys::Escape) { CloseClicked(); return FReply::Handled(); }
     return Super::NativeOnPreviewKeyDown(Geometry,Event);
 }
+
+void UTownAgeCustomizationWidget::SetWardrobeState(uint8 Owned, uint8 Available, uint8 Outfit)
+{
+    OwnedOutfits = Owned;
+    AvailableOutfits = Available;
+    SetSelectedOutfit(Outfit);
+}
+
+void UTownAgeCustomizationWidget::SetSelectedOutfit(uint8 Outfit)
+{
+    SelectedOutfit = Outfit;
+    for (int32 Index = 0; Index < OutfitButtons.Num(); ++Index)
+    {
+        OutfitButtons[Index]->SetVisibility(TownAgeWardrobe::Owns(OwnedOutfits, uint8(Index))
+            ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+        OutfitButtons[Index]->SetBackgroundColor(Index == Outfit
+            ? FLinearColor(.28f, .42f, .27f) : FLinearColor(.16f, .22f, .18f));
+    }
+    SetReady(bReady);
+}
+
+void UTownAgeCustomizationWidget::DefaultOutfitClicked() { OnOutfitSelected.Broadcast(TownAgeWardrobe::Default); }
+void UTownAgeCustomizationWidget::PinkDressClicked() { OnOutfitSelected.Broadcast(TownAgeWardrobe::PinkDress); }
+void UTownAgeCustomizationWidget::YellowOverallsClicked() { OnOutfitSelected.Broadcast(TownAgeWardrobe::YellowOveralls); }

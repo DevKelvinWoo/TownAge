@@ -11,7 +11,8 @@ enum class ETownAgeCosmeticCategory : uint8
 {
     Dye,
     Surgery,
-    Makeup
+    Makeup,
+    Wardrobe
 };
 
 // Discrete, bounded appearance data; clients never submit material names or paths.

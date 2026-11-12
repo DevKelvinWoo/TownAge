@@ -4,6 +4,7 @@
 #include "Components/ActorComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "TownAgeCosmeticModules.h"
+#include "TownAgeWardrobe.h"
 #include "TownAgeCustomizationComponent.generated.h"
 
 class UTownAgeInteractionTargetComponent;
@@ -14,6 +15,7 @@ class AController;
 class APlayerController;
 class UMaterialInterface;
 class UAnimationAsset;
+class USkeletalMesh;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTownAgeCustomization, Log, All);
 
@@ -67,6 +69,8 @@ public:
     bool IsOriginalMakeupPreview() const { return bOriginalMakeupPreview; }
     UFUNCTION(BlueprintCallable, Category="TownAge|Customization")
     void ChooseHairColor(uint8 ColorIndex);
+    UFUNCTION(BlueprintCallable, Category="TownAge|Wardrobe")
+    void ChooseOutfit(uint8 Outfit);
     UFUNCTION(BlueprintCallable, Category="TownAge|Customization")
     void CloseCustomization();
 
@@ -77,7 +81,18 @@ private:
     FTownAgeMakeupState MakeupState;
     FString AppearanceAccount;
     bool bAppearanceProfileReady = true;
-    bool StageAppearance(uint8 ColorIndex, const FTownAgeMakeupState& Makeup);
+    bool StageAppearance(uint8 ColorIndex, const FTownAgeMakeupState& Makeup, uint8 Outfit);
+    UPROPERTY(ReplicatedUsing=OnRep_Outfit)
+    uint8 EquippedOutfit = TownAgeWardrobe::Default;
+    uint8 OwnedOutfits = TownAgeWardrobe::TestOwnership;
+    UPROPERTY(Transient) TObjectPtr<USkeletalMesh> DefaultOutfitMesh;
+    UPROPERTY(EditDefaultsOnly, Category="TownAge|Wardrobe")
+    TMap<uint8, TObjectPtr<USkeletalMesh>> OutfitMeshes;
+    USkeletalMesh* ResolveOutfitMesh(uint8 Outfit) const;
+    void ApplyOutfitToPreview();
+    UFUNCTION() void OnRep_Outfit();
+    UFUNCTION(Server, Reliable) void ServerChooseOutfit(uint32 SessionId, uint8 Outfit);
+    UFUNCTION(Client, Reliable) void ClientConfirmOutfit(uint32 SessionId, uint8 Outfit);
     UPROPERTY(Replicated)
     bool bServerSessionActive = false;
     UPROPERTY(Transient)
@@ -105,7 +120,7 @@ private:
 
     UFUNCTION() void OnRep_HairColorIndex();
     UFUNCTION() void OnRep_MakeupState();
-    UFUNCTION(Client, Reliable) void ClientBeginCustomization(uint32 SessionId, uint8 AllowedCategories);
+    UFUNCTION(Client, Reliable) void ClientBeginCustomization(uint32 SessionId, uint8 AllowedCategories, uint8 Owned, uint8 Outfit);
     UFUNCTION(Client, Reliable) void ClientEndCustomization(uint32 SessionId);
     UFUNCTION(Client, Reliable) void ClientConfirmHairColor(uint32 SessionId, uint8 ColorIndex);
     UFUNCTION(Server, Reliable) void ServerChooseHairColor(uint32 SessionId, uint8 ColorIndex);
