@@ -21,6 +21,7 @@ public:
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
     virtual void SetupInputComponent() override;
     bool IsChatOpen() const { return bChatOpen; }
+    bool IsLightingPreviewOpen() const { return LightingPreviewWidget != nullptr; }
     void OpenChat();
     void CloseChat();
     UFUNCTION(BlueprintCallable, Category="TownAge|Development")
@@ -36,6 +37,7 @@ public:
     UFUNCTION(Client, Reliable)
     void ClientChatResult(bool bAccepted, const FString& Notice);
 private:
+    void HandleCameraWheel(float Delta);
     UPROPERTY(Transient)
     TObjectPtr<class UTownAgeChatWidget> ChatWidget;
     UPROPERTY(Transient)

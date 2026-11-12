@@ -27,7 +27,7 @@
 
 namespace
 {
-    constexpr float WalkSpeed = 120.f;
+    constexpr float WalkSpeed = 100.f;
     constexpr float RunSpeed = 304.f;
     // The approved Blend Space's walk sample is authored for this stride speed.
     constexpr float AuthoredWalkSpeed = 87.f;
@@ -59,7 +59,7 @@ ATownAgePlayer::ATownAgePlayer()
     CameraBoom->SetUsingAbsoluteRotation(true);
     CameraBoom->SetRelativeRotation(FRotator(-32.f, -90.f, 0.f));
     // Wider village-life framing: the avatar occupies roughly a quarter of a 16:9 view.
-    CameraBoom->TargetArmLength = 1500.f;
+    CameraBoom->TargetArmLength = DesiredCameraDistance;
     CameraBoom->TargetOffset = FVector(0.f, 0.f, 45.f);
     CameraBoom->bUsePawnControlRotation = false;
     CameraBoom->bEnableCameraLag = true;
@@ -156,27 +156,64 @@ bool ATownAgePlayer::IsDoorBusy() const
     return DoorTraversal && DoorTraversal->IsBusy();
 }
 
-void ATownAgePlayer::UpdateTouchControls(APlayerController* PC)
+bool ATownAgePlayer::CanAdjustCamera() const
+{
+    const auto* PC = Cast<ATownAgePlayerController>(Controller);
+    return PC && IsLocallyControlled() && !IsDoorBusy() && !IsCustomizing()
+        && !PC->IsChatOpen() && !PC->IsLightingPreviewOpen();
+}
+
+void ATownAgePlayer::ScaleCameraDistance(double Ratio)
+{
+    DesiredCameraDistance = FMath::Clamp(DesiredCameraDistance * Ratio, 1100., 2800.);
+}
+
+void ATownAgePlayer::ZoomCameraByWheel(float Delta)
+{
+    if (FMath::IsFinite(Delta) && CanAdjustCamera())
+        ScaleCameraDistance(FMath::Pow(.89, FMath::Clamp(double(Delta), -4., 4.)));
+}
+
+void ATownAgePlayer::UpdateTouchControls(APlayerController* PC, bool bAllowZoom)
 {
     TouchMove = FVector2D::ZeroVector; bTouchSprintHeld = false;
     if (!UsesTouchControls()) return;
     int32 Width, Height; PC->GetViewportSize(Width, Height);
     if (Width <= 0 || Height <= 0) return;
     const FTownAgeTouchLayout Layout(FVector2D(Width, Height));
-    for (int32 Finger = 0; Finger < 10; ++Finger)
+    FVector2D Positions[FTownAgePinchZoom::MaxFingers] = {};
+    uint16 AvailableForZoom = 0;
+    if (!bAllowZoom)
+    {
+        PinchZoom = FTownAgePinchZoom();
+        ZoomEligibleTouches = 0;
+    }
+    for (int32 Finger = 0; Finger < FTownAgePinchZoom::MaxFingers; ++Finger)
     {
         float X, Y; bool bDown;
         PC->GetInputTouchState(ETouchIndex::Type(Finger), X, Y, bDown);
         const bool bNewPress = bDown && !TouchWasDown[Finger];
         TouchWasDown[Finger] = bDown;
+        const uint16 Mask = 1u << Finger;
         if (!bDown)
         {
+            ZoomEligibleTouches &= ~Mask;
             if (MoveFinger == Finger) MoveFinger = INDEX_NONE;
             if (SprintFinger == Finger) SprintFinger = INDEX_NONE;
             if (InteractionFinger == Finger) InteractionFinger = INDEX_NONE;
             continue;
         }
         const FVector2D Position(X, Y);
+        Positions[Finger] = Position;
+        if (bAllowZoom && bNewPress && !Layout.IsInteractButton(Position)
+            && FVector2D::Distance(Position, Layout.MoveCenter) >= Layout.MoveRadius * 1.5f
+            && FVector2D::Distance(Position, Layout.SprintCenter) >= Layout.SprintRadius * 1.3f)
+            ZoomEligibleTouches |= Mask;
+        if (PinchZoom.Owns(Finger))
+        {
+            AvailableForZoom |= Mask;
+            continue;
+        }
         // Consume a new press even when disabled. Holding a disabled button
         // must not fire later merely because a target enters range.
         if (bNewPress && InteractionFinger == INDEX_NONE && Finger != MoveFinger && Finger != SprintFinger && Layout.IsInteractButton(Position))
@@ -189,7 +226,11 @@ void ATownAgePlayer::UpdateTouchControls(APlayerController* PC)
         if (SprintFinger == INDEX_NONE && Finger != MoveFinger && FVector2D::Distance(Position, Layout.SprintCenter) < Layout.SprintRadius * 1.3f) SprintFinger = Finger;
         if (Finger == MoveFinger) TouchMove = Layout.Movement(Position);
         if (Finger == SprintFinger) bTouchSprintHeld = FVector2D::Distance(Position, Layout.SprintCenter) < Layout.SprintRadius * 1.6f;
+        if ((ZoomEligibleTouches & Mask) && Finger != MoveFinger && Finger != SprintFinger)
+            AvailableForZoom |= Mask;
     }
+    const double Ratio = PinchZoom.Update(AvailableForZoom, Positions);
+    if (bAllowZoom) ScaleCameraDistance(Ratio);
 }
 
 void ATownAgePlayer::Tick(float DeltaSeconds)
@@ -224,7 +265,8 @@ void ATownAgePlayer::Tick(float DeltaSeconds)
     }
     APlayerController* PC = Cast<APlayerController>(Controller);
     if (!PC || !IsLocallyControlled()) return;
-    UpdateTouchControls(PC);
+    UpdateTouchControls(PC, CanAdjustCamera());
+    CameraBoom->TargetArmLength = FMath::FInterpTo(CameraBoom->TargetArmLength, DesiredCameraDistance, DeltaSeconds, 12.f);
     const auto* ChatPC = Cast<ATownAgePlayerController>(PC);
     if (IsDoorBusy() || IsCustomizing() || (ChatPC && ChatPC->IsChatOpen()))
     {

@@ -3,6 +3,7 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/GameModeBase.h"
 #include "TownAgeStamina.h"
+#include "TownAgeTouch.h"
 #include "TownAgePlayer.generated.h"
 
 UCLASS()
@@ -36,14 +37,21 @@ public:
     class UTownAgeCustomizationComponent* GetCustomizationComponent() const { return Customization; }
     UFUNCTION(BlueprintPure, Category="TownAge|Customization")
     bool IsCustomizing() const;
+    UFUNCTION(BlueprintCallable, Category="TownAge|Camera")
+    void ZoomCameraByWheel(float Delta);
     FVector2D TouchMove = FVector2D::ZeroVector;
 private:
-    void UpdateTouchControls(class APlayerController* PC);
+    void UpdateTouchControls(class APlayerController* PC, bool bAllowZoom);
+    bool CanAdjustCamera() const;
+    void ScaleCameraDistance(double Ratio);
     int32 MoveFinger = INDEX_NONE;
     int32 SprintFinger = INDEX_NONE;
     int32 InteractionFinger = INDEX_NONE;
     bool TouchWasDown[10] = {};
     bool bTouchSprintHeld = false;
+    uint16 ZoomEligibleTouches = 0;
+    FTownAgePinchZoom PinchZoom;
+    float DesiredCameraDistance = 1900.f;
 public:
     UPROPERTY(Replicated, BlueprintReadOnly, Category="Stamina")
     float Stamina = 100.f;

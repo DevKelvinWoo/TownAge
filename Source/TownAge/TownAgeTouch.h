@@ -1,6 +1,38 @@
 #pragma once
 #include "CoreMinimal.h"
 
+struct FTownAgePinchZoom
+{
+    static constexpr int32 MaxFingers = 10;
+    int32 First = INDEX_NONE;
+    int32 Second = INDEX_NONE;
+    double PreviousDistance = 0.;
+
+    bool Owns(int32 Finger) const { return Finger == First || Finger == Second; }
+
+    double Update(uint16 Eligible, const FVector2D* Positions)
+    {
+        if (First == INDEX_NONE || Second == INDEX_NONE
+            || !(Eligible & (1u << First)) || !(Eligible & (1u << Second)))
+        {
+            *this = FTownAgePinchZoom();
+            for (int32 Finger = 0; Finger < MaxFingers; ++Finger)
+            {
+                if (!(Eligible & (1u << Finger))) continue;
+                if (First == INDEX_NONE) First = Finger;
+                else { Second = Finger; break; }
+            }
+            if (Second == INDEX_NONE) First = INDEX_NONE;
+        }
+        if (Second == INDEX_NONE) return 1.;
+        const double Distance = FVector2D::Distance(Positions[First], Positions[Second]);
+        const double Ratio = PreviousDistance >= 24. && Distance >= 24.
+            ? FMath::Clamp(PreviousDistance / Distance, .5, 2.) : 1.;
+        PreviousDistance = Distance;
+        return Ratio;
+    }
+};
+
 struct FTownAgeTouchLayout
 {
     FVector2D MoveCenter, SprintCenter, InteractCenter;

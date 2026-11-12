@@ -38,6 +38,18 @@ bool FTownAgeTouchTest::RunTest(const FString& Parameters)
         TestTrue(TEXT("Dragging beyond pad clamps movement"), FMath::IsNearlyEqual(L.Movement(L.MoveCenter + FVector2D(2000,2000)).Size(),1.f));
         TestTrue(TEXT("Screen-up touch has negative Y"), L.Movement(L.MoveCenter - FVector2D(0,L.MoveRadius)).Y < -.99f);
     }
+    FTownAgePinchZoom Pinch;
+    FVector2D Fingers[FTownAgePinchZoom::MaxFingers] = {};
+    Fingers[1] = FVector2D(100., 0.);
+    TestEqual(TEXT("A new pair establishes a baseline"), Pinch.Update(3, Fingers), 1.);
+    Fingers[1].X = 125.;
+    TestEqual(TEXT("Spreading fingers zooms in"), Pinch.Update(3, Fingers), .8);
+    Fingers[1].X = 100.;
+    TestEqual(TEXT("Pinching fingers zooms out"), Pinch.Update(3, Fingers), 1.25);
+    Fingers[2] = FVector2D(300., 0.);
+    TestEqual(TEXT("A third finger does not change the active pair"), Pinch.Update(7, Fingers), 1.);
+    TestEqual(TEXT("Replacing a finger does not jump the zoom"), Pinch.Update(6, Fingers), 1.);
+    TestFalse(TEXT("The released finger is no longer owned"), Pinch.Owns(0));
     return true;
 }
 #endif

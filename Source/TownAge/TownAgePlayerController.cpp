@@ -30,9 +30,16 @@ void ATownAgePlayerController::SetupInputComponent()
 {
     Super::SetupInputComponent();
     InputComponent->BindKey(EKeys::Enter, IE_Pressed, this, &ATownAgePlayerController::OpenChat);
+    InputComponent->BindAxisKey(EKeys::MouseWheelAxis, this, &ATownAgePlayerController::HandleCameraWheel);
 #if !UE_BUILD_SHIPPING
     InputComponent->BindKey(EKeys::F7, IE_Pressed, this, &ATownAgePlayerController::ToggleLightingPreview);
 #endif
+}
+
+void ATownAgePlayerController::HandleCameraWheel(float Delta)
+{
+    if (!FMath::IsNearlyZero(Delta))
+        if (auto* TownPlayer = Cast<ATownAgePlayer>(GetPawn())) TownPlayer->ZoomCameraByWheel(Delta);
 }
 
 void ATownAgePlayerController::ToggleLightingPreview()

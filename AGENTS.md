@@ -46,8 +46,9 @@ Apply these rules in every future session when adding or changing a feature that
 - Open `/Game/Maps/L_CharacterTest` for ordinary project work and character tests.
 - The test level uses `ATownAgeGameMode`, which spawns the controllable `ATownAgePlayer` at PlayerStart during Play.
 - `ATownAgePlayer` uses the Meshy character under `/Game/Characters/Meshy/TownKeeper_Meshy/candidate_v001`, screen-relative WASD movement and the fixed cozy camera. Its native single-node AnimInstance evaluates Idle/Walk/Run through `Animations/Locomotion01/BS_TownKeeper_Meshy_Locomotion` from actual planar velocity. The zero-speed sample is the calm4second Idle, not the legacy.033second static pose. Smooth sample weights once in the Blend Space; do not add a second velocity filter. Moving-state hysteresis enters above4cm/s and exits at2cm/s.
-- Walking speed is 120 cm/s and sprint speed is 304 cm/s. The approved Meshy Blend Space keeps its authored 87 cm/s walk sample. Runtime remaps actual speed to that sample and adjusts playback cadence. Meshy hair/pouch automatic-skin deformation remains a known limitation; the user requested applying the available clips without further deep repair.
+- Walking speed is 100 cm/s and sprint speed is 304 cm/s. The approved Meshy Blend Space keeps its authored 87 cm/s walk sample. Runtime remaps actual speed to that sample and adjusts playback cadence. Meshy hair/pouch automatic-skin deformation remains a known limitation; the user requested applying the available clips without further deep repair.
 - Hold Shift with movement to sprint. Stamina is server-authoritative: capacity 100, drain 12/s, regeneration 15/s after 1.5 seconds without sprinting, exhaustion unlock at 20. `ATownAgeHUD` shows a plain single-color stamina ring beside the character only while Shift is held.
+- Camera distance is local to each player. The wheel and a two-finger pinch adjust the 1900 cm default within 1100–2800 cm. Touches owned by movement, sprint, or interact controls are excluded from the pinch.
 - This is the editor startup map and the current game default map.
 
 ## Village terrain foundation
