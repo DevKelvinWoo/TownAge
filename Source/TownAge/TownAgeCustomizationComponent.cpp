@@ -194,6 +194,7 @@ void UTownAgeCustomizationComponent::ClientBeginCustomization_Implementation(uin
     if (!PC || !PC->IsLocalController()) return;
     CleanupLocalPreview();
     PC->CloseChat();
+    PC->CloseLightingPreview();
     LocalController = PC;
     LocalSessionId = SessionId;
     LocalAllowedCategories = AllowedCategories;

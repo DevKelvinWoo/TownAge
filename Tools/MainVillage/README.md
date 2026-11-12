@@ -80,3 +80,13 @@ streetscape application again after a blockout refresh.
 Add `-MainVillageStreetscape` to the PIE verifier to check the saved curb
 instances, material references and vertical movement at the crossing. It
 writes the capture sequence to `Saved/MainVillage/Streetscape/PIE`.
+
+## Lighting review
+
+Open `/Game/Maps/L_MainVillage_Blockout_01`, start a standalone development
+Play session, and press **F7** to jump to one of the four lighting presets.
+The map is listed in `CozyVillageLightingMaps` in `Config/DefaultGame.ini`.
+
+Run the editor with `-ExecutePythonScript=<path to Tools/MainVillage/verify_lighting.py>`
+to exercise the preview buttons and save the panel plus four matched
+gameplay-camera captures under `Saved/MainVillage/Lighting/PIE`.

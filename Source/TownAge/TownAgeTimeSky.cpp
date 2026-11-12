@@ -94,6 +94,8 @@ void ATownAgeTimeSky::BeginPlay()
         SkyDome->SetMaterial(0, SkyInstance);
     }
     UWorld* World = GetWorld();
+    const FName MapPackage(*UWorld::RemovePIEPrefix(World->GetOutermost()->GetName()));
+    bCozyVillageLighting = CozyVillageLightingMaps.Contains(MapPackage);
     // Touch only persistent outdoor lighting, never streamed house lighting.
     for (TActorIterator<ADirectionalLight> It(World); It; ++It)
     {
@@ -111,6 +113,12 @@ void ATownAgeTimeSky::BeginPlay()
         PeakSunIntensity = FMath::Max(.01f, Sun->Intensity);
         Sun->SetMobility(EComponentMobility::Movable);
         Sun->SetAtmosphereSunLight(true);
+        if (bCozyVillageLighting)
+        {
+            Sun->SetLightSourceAngle(2.8f);
+            Sun->SetLightSourceSoftAngle(1.2f);
+            Sun->SetShadowAmount(.62f);
+        }
     }
     for (TActorIterator<ASkyLight> It(World); It; ++It)
     {
@@ -170,7 +178,10 @@ void ATownAgeTimeSky::UpdateSky()
     const double Orbit = (Hour - 6.0) / 24.0 * UE_DOUBLE_TWO_PI;
     const float Elevation = FMath::Sin(Orbit);
     const float Daylight = FMath::SmoothStep(-.08f, .18f, Elevation);
-    const FVector SunDirection(FMath::Cos(Orbit) * .70710678, FMath::Cos(Orbit) * .70710678, Elevation);
+    const double Horizontal = FMath::Cos(Orbit);
+    const FVector SunDirection = bCozyVillageLighting
+        ? FVector(Horizontal * .88, .45, Elevation).GetSafeNormal()
+        : FVector(Horizontal * .70710678, Horizontal * .70710678, Elevation);
     const FVector MoonDirection = FVector(-.35, .45, .82).GetSafeNormal();
     const FVector KeyDirection = (SunDirection * Daylight + MoonDirection * (1.f - Daylight)).GetSafeNormal();
     const float MoonTintBlend = FMath::SmoothStep(.7f, 1.f, 1.f - Daylight);
@@ -180,15 +191,27 @@ void ATownAgeTimeSky::UpdateSky()
         // Absolute real-world moon lux would make a cozy playable village black
         // at the authored 50,000-lux daytime exposure, so retain a 3% key floor.
         Sun->SetWorldRotation((-KeyDirection).Rotation());
-        Sun->SetIntensity(PeakSunIntensity * FMath::Lerp(.03f, 1.f, Daylight));
-        Sun->SetLightColor(FMath::Lerp(Palette.SunTint, FLinearColor(.65f,.73f,.90f), MoonTintBlend));
+        const float KeyStrength = bCozyVillageLighting
+            ? FMath::Lerp(.050f, FMath::Lerp(.55f, .85f, FMath::Max(0.f, Elevation)), Daylight)
+            : FMath::Lerp(.03f, 1.f, Daylight);
+        const FLinearColor DayTint = bCozyVillageLighting
+            ? FMath::Lerp(Palette.SunTint, FLinearColor(1.f,.96f,.88f), .28f) : Palette.SunTint;
+        Sun->SetIntensity(PeakSunIntensity * KeyStrength);
+        const FLinearColor MoonTint = bCozyVillageLighting
+            ? FLinearColor(.52f,.64f,1.f) : FLinearColor(.65f,.73f,.90f);
+        Sun->SetLightColor(FMath::Lerp(DayTint, MoonTint, MoonTintBlend));
     }
     if (SkyFill)
     {
-        SkyFill->SetIntensity(PeakSkyIntensity * FMath::Lerp(.20f, 1.f, Daylight));
-        SkyFill->SetLightColor(FMath::Lerp(FLinearColor(.44f,.55f,.82f), FLinearColor::White, Daylight));
+        SkyFill->SetIntensity(PeakSkyIntensity * (bCozyVillageLighting
+            ? FMath::Lerp(.55f, 1.65f, Daylight) : FMath::Lerp(.20f, 1.f, Daylight)));
+        const FLinearColor NightFill = bCozyVillageLighting
+            ? FLinearColor(.52f,.64f,.90f) : FLinearColor(.44f,.55f,.82f);
+        SkyFill->SetLightColor(FMath::Lerp(NightFill,
+            bCozyVillageLighting ? FLinearColor(1.f,.96f,.90f) : FLinearColor::White, Daylight));
     }
-    Exposure->Settings.AutoExposureBias = FMath::Lerp(-1.25f, 0.f, Daylight);
+    Exposure->Settings.AutoExposureBias = bCozyVillageLighting
+        ? FMath::Lerp(-1.05f, .26f, Daylight) : FMath::Lerp(-1.25f, 0.f, Daylight);
     if (SkyInstance)
     {
         SkyInstance->SetVectorParameterValue(TEXT("Zenith Color"), Palette.Zenith);

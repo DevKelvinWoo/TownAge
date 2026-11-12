@@ -30,6 +30,12 @@ systems to control time; a rate change rebases the epoch without jumping time.
 These functions are not client-callable RPCs. In non-Shipping development builds,
 the **server** accepts `-TownAgeStartHour=18 -TownAgeDayMinutes=1` for quick QA.
 
+In a development Play session, **F7** opens the lighting preview on the local
+authority player. Choose Morning 08:00, Noon 12:00, Evening 17:30 or Night 22:00.
+F7, Esc or the Close button returns focus to the game. The presets use the
+authoritative session clock, so a listen-server host's selection is visible to
+connected clients. Remote players cannot open the panel or submit time changes.
+
 The clock advances during active simulation, pauses with the world and follows
 global time dilation. It continues through streamed cottage travel. Midnight
 increments the day counter. This is session state: restart/full map travel starts
@@ -62,6 +68,12 @@ as for the daytime host. Its intensity/tint changes with time. Dynamic cubemap
 recapture, volumetric clouds and additional shadow lights are avoided for mobile.
 Reflections are consequently an approximation of the current sky. No new binary
 assets or external dependencies are needed.
+
+The main-village review map opts into the concept lighting through
+`CozyVillageLightingMaps` in `Config/DefaultGame.ini`. It uses softer,
+less opaque directional shadows, more ambient fill, a warm daylight tint and
+a readable cool-blue night while retaining the existing one-sun/one-skylight
+setup.
 
 ## Verification tools
 

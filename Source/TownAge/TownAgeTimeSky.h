@@ -5,7 +5,7 @@
 #include "TownAgeTimeSky.generated.h"
 
 /** Local presentation of the authoritative GameState clock; never owns time. */
-UCLASS(NotBlueprintable)
+UCLASS(Config=Game, NotBlueprintable)
 class TOWNAGE_API ATownAgeTimeSky : public AActor
 {
     GENERATED_BODY()
@@ -17,6 +17,7 @@ public:
 private:
     void UpdateSky();
 
+    UPROPERTY(Config) TArray<FName> CozyVillageLightingMaps;
     UPROPERTY() TObjectPtr<class UStaticMeshComponent> SkyDome;
     UPROPERTY() TObjectPtr<class UPostProcessComponent> Exposure;
     UPROPERTY() TObjectPtr<class UMaterialInterface> SkyMaterial;
@@ -26,4 +27,5 @@ private:
     UPROPERTY() TObjectPtr<class USkyLightComponent> SkyFill;
     float PeakSunIntensity = 10.f;
     float PeakSkyIntensity = 1.f;
+    bool bCozyVillageLighting = false;
 };
