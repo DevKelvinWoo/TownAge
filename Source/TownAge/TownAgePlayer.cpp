@@ -48,7 +48,10 @@ ATownAgePlayer::ATownAgePlayer()
     GetCharacterMovement()->MaxAcceleration = 1000.f;
     GetCharacterMovement()->BrakingDecelerationWalking = 1400.f;
     static ConstructorHelpers::FObjectFinder<USkeletalMesh> Model(TEXT("/Game/Characters/Meshy/TownKeeper_Meshy/candidate_v001/SK_TownKeeper_Meshy.SK_TownKeeper_Meshy"));
-    if (Model.Succeeded()) GetMesh()->SetSkeletalMesh(Model.Object);
+    static ConstructorHelpers::FObjectFinderOptional<USkeletalMesh> FistModel(
+        TEXT("/Game/Characters/Meshy/TownKeeper_ClosedFists/candidate_v003/SK_TownKeeper_ClosedFists.SK_TownKeeper_ClosedFists"), LOAD_Quiet);
+    if (USkeletalMesh* Fitted = FistModel.Get()) GetMesh()->SetSkeletalMesh(Fitted);
+    else if (Model.Succeeded()) GetMesh()->SetSkeletalMesh(Model.Object);
     GetMesh()->SetRelativeLocation(FVector(0.f, 0.f, -88.f));
     GetMesh()->SetRelativeRotation(FRotator(0.f, -90.f, 0.f));
     GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);

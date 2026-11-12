@@ -52,3 +52,15 @@ result under `Saved/Wardrobe`. For a two-player PIE check, select Play As
 Listen Server, two players, and Run Under One Process, then add
 `-TownAgeWardrobeListenServer`. The check observes the host's outfit changes on
 a nearby client and verifies the client's appearance and preview stay independent.
+
+## Closed-fist variants
+
+The fitted TownKeeper, PinkDress and YellowOveralls meshes under
+`/Game/Characters/Meshy/TownKeeper_ClosedFists/candidate_v003` use the existing
+skeleton, face atlas and fabric materials. The fist geometry comes from the
+completed Meshy GLB in `Saved/Meshy/TownKeeper_ClosedFists/candidate_v001`.
+
+Run Blender with `--python Tools/Character/fit_meshy_closed_fists.py` to extract
+the fist meshes and fit them to the original TownKeeper and wardrobe wrists.
+Run `Tools/Character/import_meshy_closed_fists.py` with Unreal Editor Python to
+check the bind transforms and import into the empty versioned folder.

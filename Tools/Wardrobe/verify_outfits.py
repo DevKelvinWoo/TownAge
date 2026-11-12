@@ -8,7 +8,12 @@ from pathlib import Path
 import unreal
 
 OUT = Path(__file__).resolve().parents[2] / 'Saved/Wardrobe'
-STEPS = [('SK_PinkDress', 1), ('SK_YellowOveralls', 2), ('SK_TownKeeper_Meshy', 0)]
+FIST_FOLDER = '/Game/Characters/Meshy/TownKeeper_ClosedFists/candidate_v003'
+ORIGINAL_STEPS = [('SK_PinkDress', 1), ('SK_YellowOveralls', 2), ('SK_TownKeeper_Meshy', 0)]
+FIST_STEPS = [('SK_PinkDress_ClosedFists', 1), ('SK_YellowOveralls_ClosedFists', 2),
+              ('SK_TownKeeper_ClosedFists', 0)]
+STEPS = [fitted if unreal.EditorAssetLibrary.does_asset_exist(FIST_FOLDER + '/' + fitted[0]) else original
+         for original, fitted in zip(ORIGINAL_STEPS, FIST_STEPS)]
 LEVELS = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
 NETWORK = '-TownAgeWardrobeListenServer' in unreal.SystemLibrary.get_command_line()
 REPORT = 'outfit_network.json' if NETWORK else 'outfit_runtime.json'
@@ -37,12 +42,14 @@ def check_equipped(world, custom, mesh, name, capture=False):
     preview = custom.get_preview_actor()
     portrait = preview.get_preview_mesh()
     assert mesh_asset(mesh).get_name() == name, mesh_asset(mesh).get_name()
+    if name.endswith('_ClosedFists'):
+        assert mesh_asset(mesh).get_path_name().startswith(FIST_FOLDER + '/')
     assert mesh_asset(portrait) == mesh_asset(mesh)
     assert mesh.get_anim_instance() == STATE['anim'], 'Outfit restarted player animation'
     assert portrait.get_anim_instance().get_animation_asset() == STATE['idle']
     assert custom.can_apply_makeup() and custom.can_dye_hair()
-    if name != 'SK_TownKeeper_Meshy':
-        material = 'M_' + name.removeprefix('SK_')
+    if name != STEPS[-1][0]:
+        material = 'M_' + name.removeprefix('SK_').removesuffix('_ClosedFists')
         assert mesh.get_material(1).get_name() == material
         assert portrait.get_material(1).get_name() == material
         assert mesh.get_material(1).get_editor_property('used_with_skeletal_mesh')
@@ -114,6 +121,7 @@ def tick(_):
             portrait = custom.get_preview_actor().get_preview_mesh()
             STATE['idle'] = portrait.get_anim_instance().get_animation_asset()
             assert STATE['anim'] and STATE['idle'].get_name() == 'A_TownKeeper_Meshy_Idle'
+            assert STATE['anim'].get_animation_asset().get_name() == 'BS_TownKeeper_Meshy_Locomotion'
             widgets = unreal.WidgetLibrary.get_all_widgets_of_class(world, unreal.TownAgeCustomizationWidget, True)
             assert len(widgets) == 1
             assert widgets[0].get_editor_property('preview_image').get_visibility() == unreal.SlateVisibility.HIT_TEST_INVISIBLE
@@ -149,7 +157,7 @@ def tick(_):
             assert custom.is_server_session_active()
             advance('check_reopen')
         elif stage == 'check_reopen' and custom.is_preview_ready():
-            assert mesh_asset(custom.get_preview_actor().get_preview_mesh()).get_name() == 'SK_YellowOveralls'
+            assert mesh_asset(custom.get_preview_actor().get_preview_mesh()).get_name() == STEPS[1][0]
             STATE['checks'].append('equipped_outfit_survives_closing_and_reopening')
             widgets = unreal.WidgetLibrary.get_all_widgets_of_class(world, unreal.TownAgeCustomizationWidget, True)
             assert len(widgets) == 1
@@ -159,7 +167,7 @@ def tick(_):
         elif stage == 'close' and elapsed > .6:
             assert not custom.is_customization_open()
             custom.choose_outfit(1)
-            assert mesh_asset(mesh).get_name() == 'SK_TownKeeper_Meshy'
+            assert mesh_asset(mesh).get_name() == STEPS[-1][0]
             assert pawn.get_component_by_class(unreal.CharacterMovementComponent).get_editor_property('movement_mode') == unreal.MovementMode.MOVE_WALKING
             STATE['checks'].append('invalid_outfit_and_closed_session_rejected_movement_restored')
             if NETWORK:

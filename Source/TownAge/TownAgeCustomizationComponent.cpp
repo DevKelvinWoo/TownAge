@@ -54,8 +54,14 @@ UTownAgeCustomizationComponent::UTownAgeCustomizationComponent()
         TEXT("/Game/Characters/Clothing/PinkDress/SK_PinkDress.SK_PinkDress"), LOAD_Quiet);
     static ConstructorHelpers::FObjectFinderOptional<USkeletalMesh> Overalls(
         TEXT("/Game/Characters/Clothing/YellowOveralls/SK_YellowOveralls.SK_YellowOveralls"), LOAD_Quiet);
-    if (Dress.Get()) OutfitMeshes.Add(TownAgeWardrobe::PinkDress, Dress.Get());
-    if (Overalls.Get()) OutfitMeshes.Add(TownAgeWardrobe::YellowOveralls, Overalls.Get());
+    static ConstructorHelpers::FObjectFinderOptional<USkeletalMesh> FistDress(
+        TEXT("/Game/Characters/Meshy/TownKeeper_ClosedFists/candidate_v003/SK_PinkDress_ClosedFists.SK_PinkDress_ClosedFists"), LOAD_Quiet);
+    static ConstructorHelpers::FObjectFinderOptional<USkeletalMesh> FistOveralls(
+        TEXT("/Game/Characters/Meshy/TownKeeper_ClosedFists/candidate_v003/SK_YellowOveralls_ClosedFists.SK_YellowOveralls_ClosedFists"), LOAD_Quiet);
+    if (USkeletalMesh* Mesh = FistDress.Get() ? FistDress.Get() : Dress.Get())
+        OutfitMeshes.Add(TownAgeWardrobe::PinkDress, Mesh);
+    if (USkeletalMesh* Mesh = FistOveralls.Get() ? FistOveralls.Get() : Overalls.Get())
+        OutfitMeshes.Add(TownAgeWardrobe::YellowOveralls, Mesh);
 }
 
 void UTownAgeCustomizationComponent::BeginPlay()
