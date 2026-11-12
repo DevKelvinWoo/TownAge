@@ -51,3 +51,32 @@ collision and door alignment before replacing a blockout shell.
 Keep generated meshes and map packages local. Review PC and mobile budgets
 before promotion. Reuse the Landscape, pavement and road surfaces already in
 the blockout when refining the streetscape.
+
+## Streetscape finish
+
+The approved reference is
+`ArtSource/Terrain/MainVillage/Streetscape/Streetscape_Concept_v001.png`.
+The road and paving share world-aligned, tiling textures. The sidewalk uses
+50 × 25 cm staggered blocks and the plaza uses 50 × 50 cm squares. Pavement
+relief is a normal map. Chamfered curb stones and tapered curb ends are two
+reusable static meshes under `/Game/Environment/MainVillage/Streetscape`.
+The map uses two instanced groups for the curb edges. Curbs are visual
+geometry. The existing road and sidewalk surfaces provide walkable collision.
+
+```powershell
+& 'E:/UE/UE_5.8/Engine/Binaries/ThirdParty/Python3/Win64/python.exe' Tools/MainVillage/generate_streetscape_textures.py
+& 'E:/UE/UE_5.8/Engine/Binaries/Win64/UnrealEditor-Cmd.exe' "$PWD/TownAge.uproject" -run=pythonscript "-script=$PWD/Tools/MainVillage/apply_streetscape.py" -unattended -nullrhi -nosound -nop4
+```
+
+The application backs up the review map and changes its streetscape only.
+Pass `-MainVillageRefreshStreetTextures` after regenerating texture revisions
+to back up and reimport the five existing streetscape texture packages.
+It derives the curb edges from the authored Main street polyline. The current
+crosswalk needs to be on the final straight segment. If the route changes,
+move the crossing markers with the route and reapply to regenerate the curbs.
+The earlier blockout refresh restores the original surface palette, so run the
+streetscape application again after a blockout refresh.
+
+Add `-MainVillageStreetscape` to the PIE verifier to check the saved curb
+instances, material references and vertical movement at the crossing. It
+writes the capture sequence to `Saved/MainVillage/Streetscape/PIE`.
