@@ -66,9 +66,11 @@ close/choice messages from acting on a reopened session. Gameplay interaction,
 sprint, movement and chat are gated while the panel is open; touch state still
 updates so held input cannot become a fresh press after closing.
 
-Appearance replicates to other clients, including a newly relevant pawn. The
-selection currently belongs to this pawn's lifetime. Account saves, persistence
-across game restarts and respawn migration are outside this prototype.
+Appearance replicates to other clients, including a newly relevant pawn.
+Authoritative choices also update the appearance profile when the pawn is bound
+to a durable account. Standalone game sessions use a local offline profile.
+PIE and unauthenticated network sessions remain transient. See
+[server operation and profile storage](../Server/README.md).
 
 ## Owner avatars and preview views
 

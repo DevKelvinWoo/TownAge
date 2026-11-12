@@ -29,6 +29,18 @@ TownAge is a cozy Unreal Engine game about charming characters cultivating and i
 - Keep Steam distribution, online services, controller and keyboard/mouse input, performance, achievements, localization, and packaging constraints in mind.
 - Prefer systems that support calm co-operative play and player expression over competitive power progression.
 
+## Required server architecture for gameplay
+
+Apply these rules in every future session when adding or changing a feature that needs a server. Use the same gameplay authority on a local Unreal Dedicated Server and on an external host. The server target and launch procedure are documented in [Tools/Server/README.md](Tools/Server/README.md). Keep the existing editor and game startup maps unless the task asks to change them.
+
+- Clients send intent through owned RPCs. Validate identity, permissions, range, state, and bounds on authority, then commit once and replicate the result. UI, preview rendering, camera, and input stay local. A headless server must be able to run the gameplay without a local player or viewport.
+- Classify state before implementation. Movement, stamina, door reservations, chat rate limits, and preview state belong to the active session. Character appearance, progression, inventory, currency, purchases, and saved village state need durable server-owned records. Replication is not a save operation.
+- Keep durable data behind a storage service and use versioned records. The appearance reference implementation is `UTownAgeProfiles` with `UTownAgeProfileStore`; gameplay calls the service rather than opening files or connecting to a database directly. Remote I/O must run outside the gameplay thread. Load data before enabling dependent mutations and handle unavailable storage without overwriting existing records with defaults.
+- Bind persistent network records to a stable internal account ID established by server authentication. Never use a display name, connection index, client-supplied ID, or editor test identity as an online account key. Isolate local test, staging, and production data. Use a stable village ID for durable village state and make one authoritative writer responsible for each active village.
+- Official rewards, purchases, and trades require trusted server validation, transactional writes, and an operation ID so a retry cannot duplicate a grant or charge. Acknowledge economic success only after durable confirmation. The buffered local appearance store is for cosmetics and development, not a currency ledger.
+- Inject endpoint, port, storage location, secrets, and instance identity from deployment configuration. Keep client routing and provider-specific hosting code outside gameplay. Use the same game rules on Steam PC and mobile; platform login maps to the internal account at the backend boundary.
+- Verify authority and rejection cases, reconnect, restart and save/restore when applicable. Report editor multiplayer, packaged dedicated server, external hosting, and physical mobile verification separately.
+
 ## Default working level
 
 - Open `/Game/Maps/L_CharacterTest` for ordinary project work and character tests.

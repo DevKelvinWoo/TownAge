@@ -30,6 +30,7 @@ public:
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
     bool ServerBegin(UTownAgeInteractionTargetComponent* Target);
+    void BindAppearanceAccount(const FString& Account);
     UFUNCTION(BlueprintPure, Category="TownAge|Customization")
     bool IsCustomizationOpen() const { return bLocalOpen || bServerSessionActive; }
     UFUNCTION(BlueprintPure, Category="TownAge|Customization")
@@ -74,6 +75,9 @@ private:
     uint8 HairColorIndex = 0;
     UPROPERTY(ReplicatedUsing=OnRep_MakeupState)
     FTownAgeMakeupState MakeupState;
+    FString AppearanceAccount;
+    bool bAppearanceProfileReady = true;
+    bool StageAppearance(uint8 ColorIndex, const FTownAgeMakeupState& Makeup);
     UPROPERTY(Replicated)
     bool bServerSessionActive = false;
     UPROPERTY(Transient)

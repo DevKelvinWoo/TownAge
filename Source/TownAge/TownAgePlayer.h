@@ -12,6 +12,7 @@ class TOWNAGE_API ATownAgePlayer : public ACharacter
 public:
     ATownAgePlayer();
     virtual void BeginPlay() override;
+    virtual void PossessedBy(AController* NewController) override;
     virtual void Tick(float DeltaSeconds) override;
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
     // Used by the editor import pipeline to serialize valid Blend Space interpolation data.
@@ -78,4 +79,7 @@ class TOWNAGE_API ATownAgeGameMode : public AGameModeBase
     GENERATED_BODY()
 public:
     ATownAgeGameMode();
+    // Override after server-side authentication. An empty key means a transient profile.
+    virtual FString ResolveAppearanceAccount(const AController* Controller) const;
+    virtual void Logout(AController* Exiting) override;
 };

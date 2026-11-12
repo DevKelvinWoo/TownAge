@@ -493,6 +493,7 @@ void UTownAgeDoorTraversalComponent::RestoreAnimation()
 
 void UTownAgeDoorTraversalComponent::UpdateCosmetics()
 {
+    if (GetNetMode() == NM_DedicatedServer) return;
     ACharacter* Character = CharacterOwner(this);
     if (!Character) return;
     UAnimSingleNodeInstance* Animation = SingleNode(Character);

@@ -1,6 +1,8 @@
 #include "TownAgeCustomizationComponent.h"
 
 #include "TownAgeAppearance.h"
+#include "TownAgeProfiles.h"
+#include "Engine/GameInstance.h"
 #include "TownAgeCustomizationPreview.h"
 #include "TownAgeCustomizationWidget.h"
 #include "TownAgeInteraction.h"
@@ -39,11 +41,36 @@ void UTownAgeCustomizationComponent::EndPlay(const EEndPlayReason::Type Reason)
     Super::EndPlay(Reason);
 }
 
+void UTownAgeCustomizationComponent::BindAppearanceAccount(const FString& Account)
+{
+    if (!GetOwner()->HasAuthority() || (AppearanceAccount == Account && bAppearanceProfileReady)) return;
+    EndServerSession();
+    AppearanceAccount = Account;
+    FTownAgeAppearanceProfile Profile;
+    auto* Profiles = GetWorld()->GetGameInstance()->GetSubsystem<UTownAgeProfiles>();
+    bAppearanceProfileReady = Account.IsEmpty() || (Profiles && Profiles->LoadAppearance(Account, Profile));
+    HairColorIndex = Profile.HairColorIndex;
+    MakeupState = Profile.Makeup;
+    OnRep_HairColorIndex();
+    GetOwner()->ForceNetUpdate();
+}
+
+bool UTownAgeCustomizationComponent::StageAppearance(uint8 ColorIndex, const FTownAgeMakeupState& Makeup)
+{
+    if (!bAppearanceProfileReady) return false;
+    if (AppearanceAccount.IsEmpty()) return true;
+    auto* Profiles = GetWorld()->GetGameInstance()->GetSubsystem<UTownAgeProfiles>();
+    FTownAgeAppearanceProfile Profile;
+    Profile.HairColorIndex = ColorIndex;
+    Profile.Makeup = Makeup;
+    return Profiles && Profiles->StageAppearance(AppearanceAccount, Profile);
+}
+
 bool UTownAgeCustomizationComponent::ServerBegin(UTownAgeInteractionTargetComponent* Target)
 {
     auto* Player = Cast<ATownAgePlayer>(GetOwner());
     const auto* Row = IsValid(Target) ? Target->GetDefinition() : nullptr;
-    if (!Player || !Player->HasAuthority() || !Player->GetController() || IsCustomizationOpen()
+    if (!Player || !Player->HasAuthority() || !Player->GetController() || IsCustomizationOpen() || !bAppearanceProfileReady
         || Player->IsDoorBusy() || !Row || Row->Action != ETownAgeInteractionAction::OpenCustomization
         || (Target->AllowedCosmeticCategories & 7) == 0
         || !Target->CanInteract(Player))
@@ -102,7 +129,7 @@ void UTownAgeCustomizationComponent::ServerChooseHairColor_Implementation(uint32
         return;
     }
     if (ServerCategory != ETownAgeCosmeticCategory::Dye || !IsCategoryAllowed(ServerCategory)
-        || !CanDyeHair() || !UTownAgeDyeModule::Validate(ColorIndex)) return;
+        || !CanDyeHair() || !UTownAgeDyeModule::Validate(ColorIndex) || !StageAppearance(ColorIndex, MakeupState)) return;
     HairColorIndex = ColorIndex;
     OnRep_HairColorIndex();
     GetOwner()->ForceNetUpdate();
@@ -394,7 +421,7 @@ void UTownAgeCustomizationComponent::ServerChooseMakeup_Implementation(uint32 Se
         return;
     }
     if (ServerCategory != ETownAgeCosmeticCategory::Makeup || !IsCategoryAllowed(ServerCategory)
-        || !CanApplyMakeup() || !UTownAgeMakeupModule::Validate(State)) return;
+        || !CanApplyMakeup() || !UTownAgeMakeupModule::Validate(State) || !StageAppearance(HairColorIndex, State)) return;
     MakeupState = State;
     OnRep_MakeupState();
     GetOwner()->ForceNetUpdate();

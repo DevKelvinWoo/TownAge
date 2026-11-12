@@ -17,6 +17,9 @@
 #include "TownAgeDoor.h"
 #include "TownAgeDoorAnimInstance.h"
 #include "TownAgeCustomizationComponent.h"
+#include "TownAgeProfiles.h"
+#include "Engine/GameInstance.h"
+#include "Engine/World.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
 #include "Animation/BlendSpace1D.h"
@@ -264,4 +267,26 @@ ATownAgeGameMode::ATownAgeGameMode()
     HUDClass = ATownAgeHUD::StaticClass();
     PlayerControllerClass = ATownAgePlayerController::StaticClass();
     GameStateClass = ATownAgeGameState::StaticClass();
+}
+
+void ATownAgePlayer::PossessedBy(AController* NewController)
+{
+    Super::PossessedBy(NewController);
+    if (const auto* Mode = GetWorld()->GetAuthGameMode<ATownAgeGameMode>(); Mode && Customization)
+        Customization->BindAppearanceAccount(Mode->ResolveAppearanceAccount(NewController));
+}
+
+FString ATownAgeGameMode::ResolveAppearanceAccount(const AController* Controller) const
+{
+    // This key is deliberately local. Network PlayerState names/IDs are not
+    // accepted as authenticated account identities by this prototype.
+    return Controller && Controller->IsPlayerController() && GetNetMode() == NM_Standalone
+        && GetWorld()->WorldType == EWorldType::Game ? TEXT("offline:default") : FString();
+}
+
+void ATownAgeGameMode::Logout(AController* Exiting)
+{
+    if (auto* Instance = GetGameInstance())
+        if (auto* Profiles = Instance->GetSubsystem<UTownAgeProfiles>()) Profiles->FlushAppearance();
+    Super::Logout(Exiting);
 }
