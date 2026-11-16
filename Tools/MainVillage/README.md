@@ -90,3 +90,111 @@ The map is listed in `CozyVillageLightingMaps` in `Config/DefaultGame.ini`.
 Run the editor with `-ExecutePythonScript=<path to Tools/MainVillage/verify_lighting.py>`
 to exercise the preview buttons and save the panel plus four matched
 gameplay-camera captures under `Saved/MainVillage/Lighting/PIE`.
+
+## Generated-art village assembly
+
+`assemble_art_village.py` creates `/Game/Maps/L_MainVillage_Art_01` from the
+reviewed blockout and refuses any existing destination. Import the three new
+buildings and nine environment meshes first. Preflight reports missing assets
+before any map writes. The expected folders are:
+
+- `Architecture/{Mart,GreenHouse,Salon}/v001/SM_<name>`
+- `Nature/{Tree,Shrub,Flowers,Rock}/v001/SM_<name>`
+- `Streetscape/{Bench,Lamp,Fence,Bridge,Planter}/v001/SM_<name>`
+
+All paths above are below `/Game/Environment/MainVillage`. The complete existing
+CozyHouse01 mesh fills the fourth shell; the original interactive cottage and
+its doorway are retained. New buildings are static exterior set dressing, not
+new travel portals. Actual imported bounds determine scale and ground contact.
+
+With the editor closed, run:
+
+```powershell
+& 'E:/UE/UE_5.8/Engine/Binaries/Win64/UnrealEditor-Cmd.exe' "$PWD/TownAge.uproject" -run=pythonscript "-script=$PWD/Tools/MainVillage/assemble_art_village.py" -unattended -nullrhi -nosound -nop4
+```
+
+Optional `Saved/MainVillage/Art/assembly_overrides.json` accepts `asset_paths`
+and `yaw_degrees` dictionaries keyed by asset name. Use these before first
+assembly when import review reveals a different front axis. This file is local
+art configuration, not a runtime dependency. No existing assets or startup maps
+are changed. `MainVillage_Art_Overview` is an editor-only review camera.
+
+`Saved/MainVillage/Art/assembly_report.json` records all actor bounds, scales,
+counts, source-map hash and unverified runtime checks. The water reservation
+uses a 650cm strip behind the shops, with centerline markers and a future water
+surface at Z=15cm above the existing flat ground. A shallow surface can be added
+there without excavation; a deep river requires later Landscape sculpting.
+Water itself is intentionally absent. The exact coordinates are also saved to
+`water_reservation.json`. Check the bridge orientation and clearance in a GPU
+editor before adding water. This commandlet is not proof of visual quality,
+walkable collision, multiplayer behavior or mobile performance.
+
+For three GPU captures and a grounded player-spawn check, launch a normal
+rendering editor with one-player standalone PIE settings:
+
+```powershell
+Start-Process -FilePath 'E:/UE/UE_5.8/Engine/Binaries/Win64/UnrealEditor.exe' -ArgumentList "$PWD/TownAge.uproject",'-unattended',"-ExecutePythonScript=$PWD/Tools/MainVillage/review_art_village.py" -WindowStyle Hidden
+```
+
+The script waits 15 seconds, captures the saved overview and a closer storefront
+view, starts PIE automatically, checks that the actual player is grounded, and
+captures the gameplay camera. It exits the editor afterward and does not save
+review-only changes. Outputs are `Saved/MainVillage/Art/Review/01_Overview.png`,
+`02_Storefronts.png`, `03_Gameplay.png`, and `review_report.json`. A successful
+capture is evidence of that view only; inspect the images and run route checks
+before claiming the whole level is collision-tested.
+The review also isolates each new building in a blocking collision trace and
+walks the actual pawn toward the crossing for two seconds, requiring grounded
+movement of at least 80cm. It does not teleport the pawn or test building entry.
+
+## Building replacement candidates
+
+`import_environment_art.py` requires a normal GPU editor because collision and
+LOD editing subsystems are unavailable in a Python commandlet. The default run
+imports or verifies all twelve `v001` deliveries. Use `-MainVillageBuildingV2`
+to import only Mart, GreenHouse and Salon from
+`ArtSource/Meshy/MainVillage/<name>/v002/model.fbx` into separate
+`/Game/Environment/MainVillage/Architecture/<name>/v002` folders:
+
+```powershell
+Start-Process -FilePath 'E:/UE/UE_5.8/Engine/Binaries/Win64/UnrealEditor.exe' -ArgumentList "$PWD/TownAge.uproject",'-unattended',"-ExecutePythonScript=$PWD/Tools/MainVillage/import_environment_art.py",'-MainVillageBuildingV2','-MainVillageQuitAfterImport' -WindowStyle Hidden -Wait
+```
+
+The replacement run writes `Saved/MainVillage/Art/import_report_v002.json` and
+does not change the successful `v001` report or packages. It recomputes geometry
+normals and MikkTSpace tangents, uses single-sided building materials, and
+generates three LODs. This does not reconstruct missing faces; inspect each
+replacement before changing the level's asset paths. Normal textures remain
+omitted unless their convention has verified local evidence.
+
+## Art district delivery (2026-11-16)
+
+The local art map is `/Game/Maps/L_MainVillage_Art_01`. Three new buildings use
+the `v002` architecture candidates; nine environment models use `v001`.
+Existing CozyHouse art supplies extra homes. New shop doors are static exterior
+art; only the retained cottage has the established travel interaction.
+
+After assembly and building import, run `polish_art_village.py` in the same
+commandlet form as the assembler. It backs up the art map, updates only that
+map, protects existing cottage/portal transforms numerically, and uses the
+available v002 buildings. It adds a curved side street, opens its curb mouth,
+adjusts planting and building proportions, and records its changes in
+`Saved/MainVillage/Art/polish_report.json`. The source blockout and startup maps
+are preserved. The art map opts into the existing cozy day/night lighting.
+
+No water is placed. `Saved/MainVillage/Art/water_reservation.json` contains the
+650cm-wide centerline and planned surface at Z=15cm. The shortened river strip
+was checked against 657 conservative heightmap samples: maximum bed height
+8.59375cm, minimum sampled surface clearance 6.40625cm. This supports a shallow
+visual water surface; it is not an excavated or swimmable river.
+
+Meshy expenditure was 270 credits (1036 before, 766 after): 45 for initial
+buildings, 135 for nine textured environment assets, and 90 for improved
+building candidates. Provider receipts and binary art remain local.
+
+The GPU review checks real screenshots, grounded spawn, a two-second walking
+input toward the crossing, and isolated building collision traces. It does not
+certify every path, bridge traversal, packaged multiplayer, or physical mobile
+performance. Generated window/interior details still require art cleanup for
+close-up production shots. Unreal import success is not visual equivalence to
+the concept.
