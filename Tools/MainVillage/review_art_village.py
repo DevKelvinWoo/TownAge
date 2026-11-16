@@ -15,8 +15,12 @@ import unreal
 ROOT = Path(__file__).resolve().parents[2]
 MAP = '/Game/Maps/L_MainVillage_Art_01'
 OUT = ROOT / 'Saved/MainVillage/Art/Review'
-if unreal.SystemLibrary.parse_param(unreal.SystemLibrary.get_command_line(), 'VillageSurfacePreview'):
-    MAP = '/Game/Maps/L_MainVillage_SurfaceReview_01'
+COMMAND_LINE = unreal.SystemLibrary.get_command_line()
+SURFACE_PREVIEW = unreal.SystemLibrary.parse_param(COMMAND_LINE, 'VillageSurfacePreview')
+SURFACE_REVIEW = SURFACE_PREVIEW or unreal.SystemLibrary.parse_param(COMMAND_LINE, 'VillageFinalSurfaces')
+if SURFACE_PREVIEW:
+    MAP = '/Game/Maps/L_MainVillage_SurfaceReview_02'
+if SURFACE_REVIEW:
     OUT = ROOT / 'Saved/MainVillage/Surfaces/Review'
 OUT.mkdir(parents=True, exist_ok=True)
 settings_file = OUT / 'review_settings.json'
@@ -140,17 +144,21 @@ def tick(_):
                     collision_checks.append({'building': label, 'hit_cm': xyz(position),
                                              'other_actors_ignored': True, 'trace_complex': False})
                 REPORT['building_collision_checks'] = collision_checks
-                if MAP.endswith('SurfaceReview_01'):
+                if SURFACE_REVIEW:
                     REPORT['branch_collision_checks'] = []
-                    for label, x in [('Village_BranchAsphalt', 2200),
-                                     ('Village_BranchWestPavers', 1920),
-                                     ('Village_BranchEastPavers', 2480)]:
+                    for label, x, y, height in [('Village_BranchAsphalt', 2200, -800, 11.4),
+                                                ('Village_BranchWestPavers', 1920, -800, 12),
+                                                ('Village_BranchEastPavers', 2480, -800, 12),
+                                                ('Village_MainAsphalt', 3260, 600, 9),
+                                                ('Village_MainFarPavers', 3260, 1000, 8),
+                                                ('Village_MainNearEast', 3260, 190, 8),
+                                                ('Village_MainNearWest', 1600, 185, 8)]:
                         surface = next(a for a in all_runtime_actors if a.get_actor_label() == label)
                         hit = unreal.SystemLibrary.line_trace_single(world,
-                            unreal.Vector(x, -800, 100), unreal.Vector(x, -800, -20),
+                            unreal.Vector(x, y, 100), unreal.Vector(x, y, -20),
                             unreal.TraceTypeQuery.ECC_VISIBILITY, False,
                             [a for a in all_runtime_actors if a != surface], unreal.DrawDebugTrace.NONE, True)
-                        assert hit and 10 < hit.to_dict()['location'].z < 13, label
+                        assert hit and abs(hit.to_dict()['location'].z - height) < .5, label
                         REPORT['branch_collision_checks'].append(label)
                 advance('gameplay')
             elif STATE['stage'] == 'gameplay':

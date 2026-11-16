@@ -201,10 +201,15 @@ the concept.
 
 ## Warm illustrated presentation
 
-Run `refine_surfaces.py` after the warm appearance pass for world-aligned grass,
-asphalt and paving plus shared mitered street edges. Passing
-`-VillageSurfacePreview` targets `/Game/Maps/L_MainVillage_SurfaceReview_01`.
-The GPU review accepts the same flag and writes to `Saved/MainVillage/Surfaces/Review`.
+Run `refine_surfaces.py` after the warm appearance pass and after generating
+`Saved/MainVillage/Art/water_reservation.json` with the art polish script.
+It replaces flat lawn placeholders with continuous Landscape and six batches
+of noncolliding grass geometry, and rebuilds asphalt and sidewalk strips with
+beveled curb faces along the branch. It backs up and updates `L_MainVillage_Art_01`.
+Pass `-VillageSurfacePreview` to target `/Game/Maps/L_MainVillage_SurfaceReview_02`.
+The GPU review accepts the same preview flag, or `-VillageFinalSurfaces` for
+the original map. Both modes check seven road and sidewalk collision probes
+and write screenshots and results to `Saved/MainVillage/Surfaces/Review`.
 
 `apply_warm_look.py` is the final appearance step, after assembly/polish. It
 backs up Art_01, keeps source textures and meshes intact, and assigns isolated
