@@ -96,6 +96,7 @@ void ATownAgeTimeSky::BeginPlay()
     UWorld* World = GetWorld();
     const FName MapPackage(*UWorld::RemovePIEPrefix(World->GetOutermost()->GetName()));
     bCozyVillageLighting = CozyVillageLightingMaps.Contains(MapPackage);
+    bWarmIllustratedLighting = WarmIllustratedLightingMaps.Contains(MapPackage);
     // Touch only persistent outdoor lighting, never streamed house lighting.
     for (TActorIterator<ADirectionalLight> It(World); It; ++It)
     {
@@ -115,9 +116,9 @@ void ATownAgeTimeSky::BeginPlay()
         Sun->SetAtmosphereSunLight(true);
         if (bCozyVillageLighting)
         {
-            Sun->SetLightSourceAngle(2.8f);
-            Sun->SetLightSourceSoftAngle(1.2f);
-            Sun->SetShadowAmount(.62f);
+            Sun->SetLightSourceAngle(bWarmIllustratedLighting ? 6.f : 2.8f);
+            Sun->SetLightSourceSoftAngle(bWarmIllustratedLighting ? 2.f : 1.2f);
+            Sun->SetShadowAmount(bWarmIllustratedLighting ? .38f : .62f);
         }
     }
     for (TActorIterator<ASkyLight> It(World); It; ++It)
@@ -212,6 +213,8 @@ void ATownAgeTimeSky::UpdateSky()
     }
     Exposure->Settings.AutoExposureBias = bCozyVillageLighting
         ? FMath::Lerp(-1.05f, .26f, Daylight) : FMath::Lerp(-1.25f, 0.f, Daylight);
+    if (bWarmIllustratedLighting)
+        Exposure->Settings.AutoExposureBias = FMath::Lerp(-.9f, 1.1f, Daylight);
     if (SkyInstance)
     {
         SkyInstance->SetVectorParameterValue(TEXT("Zenith Color"), Palette.Zenith);

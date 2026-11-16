@@ -198,3 +198,45 @@ certify every path, bridge traversal, packaged multiplayer, or physical mobile
 performance. Generated window/interior details still require art cleanup for
 close-up production shots. Unreal import success is not visual equivalence to
 the concept.
+
+## Warm illustrated presentation
+
+`apply_warm_look.py` is the final appearance step, after assembly/polish. It
+backs up Art_01, keeps source textures and meshes intact, and assigns isolated
+matte material variants under `/Game/Environment/MainVillage/Look/WarmIllustrated_v001`.
+The variants lift dark baked colors, suppress metallic/specular response, and
+add a small diffuse fill. Softer sage ground replaces the coarse grass patches.
+A dedicated grade restores bright cream/pink colors without the initial gray
+wash. The original maps and streamed-room component materials are unchanged.
+
+Run the script in the same Python commandlet form as assembly, then use the GPU
+review. `WarmIllustratedLightingMaps` keeps the art map's soft shadows and daytime
+exposure consistent with its runtime clock; other cozy-map presets retain their
+existing values. Before/after screenshots live in `Saved/MainVillage/WarmLook`.
+Run this appearance step again after `polish_art_village.py`, which sets the
+baseline Landscape and lighting.
+
+## Debug click teleport
+
+In a non-Shipping play session, hold **Ctrl + Alt** and left-click a visible
+walkable surface. The cursor is temporarily shown and restored on release.
+Chat, appearance customization and lighting UI retain input ownership; doorway
+traversal blocks teleport. The server resolves the floor, checks capsule space,
+stops movement and replicates the resulting pawn position. No durable profile
+or village record is changed.
+
+PIE and standalone enable the feature immediately. Other development network
+servers must explicitly set `TownAge.Debug.AllowTeleport 1` on authority;
+client console settings cannot enable server permission. Shipping has no key
+binding and rejects both local requests and the server RPC.
+
+Run `verify_debug_teleport.py` in a normal GPU editor for success/rejection tests.
+`verify_debug_teleport_network.py` exercises a two-player listen PIE session and
+restores its transient play settings. Both use `-ExecutePythonScript` and write
+reports under `Saved/MainVillage/DebugTeleport`. These tests do not substitute
+for physical keyboard/mouse input or packaged-device verification.
+For the network verifier, also pass
+`-ini:EditorPerProjectUserSettings:[/Script/UnrealEd.LevelEditorPlaySettings]:PlayNetMode=PIE_ListenServer`.
+UE 5.8 does not export this settings enum to Python; the override applies to the
+test process. The script restores client count/process settings without saving
+them, while normal editor preference updates can still occur during PIE.

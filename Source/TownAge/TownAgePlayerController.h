@@ -20,6 +20,7 @@ public:
     virtual void BeginPlay() override;
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
     virtual void SetupInputComponent() override;
+    virtual void PlayerTick(float DeltaTime) override;
     bool IsChatOpen() const { return bChatOpen; }
     bool IsLightingPreviewOpen() const { return LightingPreviewWidget != nullptr; }
     void OpenChat();
@@ -29,6 +30,17 @@ public:
     UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category="TownAge|Development")
     bool SetLightingPreviewTime(ETownAgeLightingPreview Period);
     void CloseLightingPreview();
+    // Development-only intent path shared by the mouse shortcut and editor verification.
+    // True means accepted on authority, or submitted to authority on a client.
+    UFUNCTION(BlueprintCallable, Category="TownAge|Development")
+    bool RequestDebugTeleportAt(const FVector& SurfacePoint);
+    UPROPERTY(Transient, BlueprintReadOnly, Category="TownAge|Development")
+    bool bLastDebugTeleportSucceeded = false;
+    UPROPERTY(Transient, BlueprintReadOnly, Category="TownAge|Development")
+    FString LastDebugTeleportNotice;
+    // UI owners release the temporary debug cursor before saving their own
+    // previous-cursor state. False defers handoff until that owner is ready.
+    void ReleaseDebugTeleportCursor(bool bRestoreInput = true);
     bool SubmitChat(const FString& Message);
     UFUNCTION(Server, Reliable)
     void ServerSendChat(const FString& Message);
@@ -38,6 +50,15 @@ public:
     void ClientChatResult(bool bAccepted, const FString& Notice);
 private:
     void HandleCameraWheel(float Delta);
+    void HandleDebugTeleportClick();
+    bool TryDebugTeleport(const FVector& SurfacePoint, FString& Notice);
+    UFUNCTION(Server, Reliable)
+    void ServerDebugTeleport(const FVector& SurfacePoint);
+    UFUNCTION(Client, Reliable)
+    void ClientDebugTeleportResult(bool bAccepted, const FString& Notice);
+    bool bDebugTeleportCursor = false;
+    bool bDebugPreviousCursor = false;
+    double LastDebugTeleportTime = -DBL_MAX;
     UPROPERTY(Transient)
     TObjectPtr<class UTownAgeChatWidget> ChatWidget;
     UPROPERTY(Transient)

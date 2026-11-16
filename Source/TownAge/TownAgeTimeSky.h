@@ -18,6 +18,7 @@ private:
     void UpdateSky();
 
     UPROPERTY(Config) TArray<FName> CozyVillageLightingMaps;
+    UPROPERTY(Config) TArray<FName> WarmIllustratedLightingMaps;
     UPROPERTY() TObjectPtr<class UStaticMeshComponent> SkyDome;
     UPROPERTY() TObjectPtr<class UPostProcessComponent> Exposure;
     UPROPERTY() TObjectPtr<class UMaterialInterface> SkyMaterial;
@@ -28,4 +29,5 @@ private:
     float PeakSunIntensity = 10.f;
     float PeakSkyIntensity = 1.f;
     bool bCozyVillageLighting = false;
+    bool bWarmIllustratedLighting = false;
 };

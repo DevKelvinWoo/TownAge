@@ -201,6 +201,7 @@ void UTownAgeCustomizationComponent::ClientBeginCustomization_Implementation(uin
     CleanupLocalPreview();
     PC->CloseChat();
     PC->CloseLightingPreview();
+    PC->ReleaseDebugTeleportCursor();
     LocalController = PC;
     LocalSessionId = SessionId;
     LocalAllowedCategories = AllowedCategories;
