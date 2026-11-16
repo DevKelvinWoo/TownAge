@@ -201,6 +201,11 @@ the concept.
 
 ## Warm illustrated presentation
 
+Run `refine_surfaces.py` after the warm appearance pass for world-aligned grass,
+asphalt and paving plus shared mitered street edges. Passing
+`-VillageSurfacePreview` targets `/Game/Maps/L_MainVillage_SurfaceReview_01`.
+The GPU review accepts the same flag and writes to `Saved/MainVillage/Surfaces/Review`.
+
 `apply_warm_look.py` is the final appearance step, after assembly/polish. It
 backs up Art_01, keeps source textures and meshes intact, and assigns isolated
 matte material variants under `/Game/Environment/MainVillage/Look/WarmIllustrated_v001`.

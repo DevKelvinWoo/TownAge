@@ -15,6 +15,9 @@ import unreal
 ROOT = Path(__file__).resolve().parents[2]
 MAP = '/Game/Maps/L_MainVillage_Art_01'
 OUT = ROOT / 'Saved/MainVillage/Art/Review'
+if unreal.SystemLibrary.parse_param(unreal.SystemLibrary.get_command_line(), 'VillageSurfacePreview'):
+    MAP = '/Game/Maps/L_MainVillage_SurfaceReview_01'
+    OUT = ROOT / 'Saved/MainVillage/Surfaces/Review'
 OUT.mkdir(parents=True, exist_ok=True)
 settings_file = OUT / 'review_settings.json'
 SETTINGS = json.loads(settings_file.read_text(encoding='utf-8-sig')) if settings_file.exists() else {}
@@ -137,6 +140,18 @@ def tick(_):
                     collision_checks.append({'building': label, 'hit_cm': xyz(position),
                                              'other_actors_ignored': True, 'trace_complex': False})
                 REPORT['building_collision_checks'] = collision_checks
+                if MAP.endswith('SurfaceReview_01'):
+                    REPORT['branch_collision_checks'] = []
+                    for label, x in [('Village_BranchAsphalt', 2200),
+                                     ('Village_BranchWestPavers', 1920),
+                                     ('Village_BranchEastPavers', 2480)]:
+                        surface = next(a for a in all_runtime_actors if a.get_actor_label() == label)
+                        hit = unreal.SystemLibrary.line_trace_single(world,
+                            unreal.Vector(x, -800, 100), unreal.Vector(x, -800, -20),
+                            unreal.TraceTypeQuery.ECC_VISIBILITY, False,
+                            [a for a in all_runtime_actors if a != surface], unreal.DrawDebugTrace.NONE, True)
+                        assert hit and 10 < hit.to_dict()['location'].z < 13, label
+                        REPORT['branch_collision_checks'].append(label)
                 advance('gameplay')
             elif STATE['stage'] == 'gameplay':
                 if capture('03_Gameplay'):
@@ -163,7 +178,7 @@ def tick(_):
 
 
 SOURCE_FILE = ROOT / 'Content/Maps/L_MainVillage_Blockout_01.umap'
-MAP_FILE = ROOT / 'Content/Maps/L_MainVillage_Art_01.umap'
+MAP_FILE = ROOT / ('Content' + MAP.removeprefix('/Game') + '.umap')
 SOURCE_HASH = hashlib.sha256(SOURCE_FILE.read_bytes()).hexdigest()
 MAP_HASH = hashlib.sha256(MAP_FILE.read_bytes()).hexdigest()
 assert LEVELS.load_level(MAP)
